@@ -276,3 +276,110 @@ substantive assumption in the trusted computing base:
 
 This is what the README's trusted-computing-base section must say
 (Phase 6). No proof was modified in Phase 0.
+
+## Phase 1 — The compiler as a pure OCaml function
+
+### D7. Shape of the library API
+
+`src/extraction/dbcert_lib.mli` exposes the compiler as three things:
+
+```ocaml
+val compile_sql  : ?optim:bool -> string -> (string, error) result
+val compile_all  : ?optim:bool -> ?debug:bool -> string
+                   -> (query_result list, error) result
+val runtime      : string
+val module_exports : string
+```
+
+Decisions behind that shape:
+
+* **SQL text in, JavaScript text out, and nothing else.** No schema
+  argument. A query is typed against the CREATE TABLE statements that
+  precede it in the same string, exactly as in a file handed to the
+  command line interface. The JavaScript library of Phase 4 already holds
+  a table registry, so it can render the declarations it needs and
+  prepend them. Keeping the OCaml boundary to strings is also what makes
+  `Js.export` trivial in Phase 2.
+* **`compile_all` as well as `compile_sql`**, because a file with several
+  queries is the case the command line interface has always handled, and
+  because it is the only way to keep that interface a thin wrapper
+  without duplicating the statement loop.
+* **The outer `result` fails only on lexing and syntax errors.** Those
+  leave no position to carry on from. A query that parses but does not
+  compile appears in the list with its own error, so one bad query does
+  not hide the rest. This is a small improvement on the old behaviour,
+  where a `Failure` from the typing pass escaped the loop and killed the
+  process.
+* **The error type mirrors `ToEJson.v`'s `result` constructor for
+  constructor** (`Not_weak_well_formed_sqlcoq`, `Not_translatable_sqlalg`,
+  and so on), with parsing and arity errors added around it. A reviewer
+  can line the two types up side by side.
+* **`optim` defaults to `false`**, which is the setting
+  `sql_query_to_imp_no_opt_is_sound` covers. The command line interface
+  keeps its `-optim` flag, so nothing changes for existing users, but a
+  caller of the library gets the verified path unless it asks otherwise.
+
+### D8. What had to change to remove the I/O
+
+* The pretty-printers in `src/extraction/sql_compiler.ml` wrote to an
+  `out_channel` through `Printf.fprintf`. They now write to a `Buffer.t`
+  through `Printf.bprintf`, with `string_of_query` and `string_of_nra` on
+  top. Mechanical, 167 call sites, no change in what they print.
+* `ToCoq.tables` and `ToCoq.indices` are global hash tables in the front
+  end. `compile_all` resets them on entry, so a compilation depends only
+  on its argument. There is a test for this: compiling A, then B, then A
+  again must give the same answer both times for A. Without the reset the
+  second A sees B's schema.
+* `src/extraction/dbcert.ml` keeps `Arg.parse`, reading the input file and
+  writing the outputs, and does nothing else. Grepping the two library
+  sources for `open_in`, `open_out`, `Sys.`, `Unix.`, `Printf.printf`,
+  `print_string`, `stdout`, `stderr`, `Filename.` and `Arg.` returns
+  nothing.
+
+The command line interface's output is unchanged: the golden files from
+Phase 0 pass byte for byte after the refactoring, which is what they were
+written for.
+
+Still to clear before Phase 2, and not part of this phase: the link line
+in `src/Makefile` still names Coq's OCaml libraries, because the front end
+is packed into the Coq plugin (D3). The extracted compiler itself needs
+none of them.
+
+### D9. The unit tests
+
+`src/tests/test_compile_sql.ml`, built by `make test_compile_sql` and run
+together with the golden-file harness by `make test`. 85 checks:
+
+* every query of the Phase 0 corpus compiled through `compile_all` and
+  compared byte for byte with the golden file the command line interface
+  produced, so the two cannot drift apart;
+* the four queries `tests/unit.sql` documents as unsupported, each
+  checked to fail with the error it is supposed to fail with, by index;
+* `compile_sql`'s arity rules, and that it reports a syntax error rather
+  than raising;
+* repeatability across calls, which is the regression test for the global
+  schema described in D8;
+* integer literals at and beyond `max_int`. The upper bound follows the
+  host, 2^62-1 natively and 2^30-1 under js_of_ocaml, so Phase 2 must run
+  this again. What the test pins is that a literal too large is
+  **refused**, not silently wrapped: the front end's `int_of_string`
+  raises, and the error surfaces as a normal compilation error.
+
+The old `make test` target, which compiled one query and ran it under
+Node, is subsumed by `./tests/run-golden.sh`.
+
+### D-A1. Proof-obligation audit at the end of Phase 1
+
+Unchanged from D-A0. Phase 1 touched four files, all of them unverified
+OCaml glue (`sql_compiler.ml`, `dbcert.ml`, the new `dbcert_lib.ml{,i}`)
+plus the Makefile and a test. No `.v` file was opened, no proof was
+modified, and no `Admitted` or `admit` was introduced anywhere:
+
+| Repository | `Admitted` | `admit.` |
+|---|---|---|
+| dbcert | 0 | 0 |
+| SQLFormalSemantics `with-floats` | 0 | 0 |
+| SQLToNRACert `main` | 0 | 0 |
+| Q*cert v2.1.1 | 0 | 0 |
+
+The axioms are the same four described in D-A0.

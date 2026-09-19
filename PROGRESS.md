@@ -24,16 +24,45 @@
 | `tests/null`, `tests/nested` | 4 of 4 and 11 of 11 compile, results match the expectations recorded in those files |
 | Coq `Admitted` / `admit.` across all five repositories | 0 / 0 |
 
-## Phase 1 — Compiler as a pure OCaml function: not started
+## Phase 1 — Compiler as a pure OCaml function: done
 
-Ready to start. The prerequisite discovered in Phase 0 is DECISIONS D3: the
-SQL front end inside SQLToNRACert is Coq-free OCaml that merely happens to
-be packed into a Coq plugin, so the first upstream patch is to split
-`plugins_datacert.mlpack` into a plain library plus a thin plugin. That
-removes the Coq-library link line from `src/Makefile` and is what makes
-Phase 2 possible at all.
+| Step | Status | Notes |
+|---|---|---|
+| Expose `compile_sql : string -> (string, error) result`, no filesystem/Unix/process dependencies | **done** | `src/extraction/dbcert_lib.mli`, with `compile_all` beside it for multi-query input (DECISIONS D7). Grepping the library sources for I/O returns nothing (D8). |
+| Make the CLI a thin wrapper | **done** | `src/extraction/dbcert.ml` is now argument parsing, reading the input and writing the outputs. Its output is byte-identical: the Phase 0 golden files pass unchanged. |
+| Confirm the extracted number representation | **done** | `nat` and `Z` extract to native `int`, floats to native `float`, no Zarith (DECISIONS D2), and there is now a test pinning the literal range and the refusal beyond it (D9). |
+| OCaml unit tests against the golden files | **done** | `src/tests/test_compile_sql.ml`, 85 checks, 0 failures. `make test` runs it and then the golden harness. |
 
-## Phases 2–6: not started
+### Phase 1 numbers
+
+| Measurement | Value |
+|---|---|
+| Unit tests | 85 checks, 0 failures |
+| Golden-file cases after the refactoring | 8 of 8 pass, byte-identical |
+| Files changed | 4 OCaml files, the Makefile, `.gitignore` |
+| `.v` files touched | 0 |
+| `Admitted` / `admit.` introduced | 0 / 0 |
+
+## Phase 2 — js_of_ocaml build: next
+
+The blocker is known and was found in Phase 0: `src/Makefile` still links
+Coq's OCaml libraries because the SQL front end is packed into the
+SQLToNRACert Coq plugin, even though the eight modules dbcert uses touch
+no Coq API (DECISIONS D3). Splitting `plugins_datacert.mlpack` into a
+plain findlib library plus a thin plugin is the first upstream patch to
+propose, and it edits no `.v` file.
+
+Two things Phase 1 established that make Phase 2 easier than feared: the
+extracted module references neither `Unix` nor `Str` and does not use
+Zarith, so no Zarith stubs are needed; and the library API is already
+string in, string out, so `Js.export` is a few lines.
+
+One thing Phase 2 must re-run: the integer-literal test. Under
+js_of_ocaml OCaml's `int` is 2^30-1 rather than 2^62-1, so the accepted
+literal range shrinks and the byte-identical check has to be read with
+that in mind.
+
+## Phases 3–6: not started
 
 ## Open items
 

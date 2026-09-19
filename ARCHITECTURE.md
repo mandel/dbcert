@@ -208,15 +208,34 @@ Q*cert modules on the verified path (tag `v2.1.1`, `compiler/core/`):
 | Enhanced model used by dbcert | `Compiler/Enhanced/EnhancedCompiler.v` | `EnhancedCompiler.QDriver.*` |
 | Q*cert extraction (its own OCaml lib) | `compiler/extraction/QcertExtraction.v` → `core.ml` | library `qcert_lib` (`compiler/dune`) |
 
-### (e) CLI driver (dbcert, hand-written)
+### (e) Library and CLI driver (dbcert, hand-written)
 
-`src/extraction/dbcert.ml`: argument parsing (`-output`, `-link`, `-optim`,
-`-verbose`), loops over statements, prints `SQLCoq query: ...` and the
-compilation result, writes `<base>[_<n>].js` with `Util.make_file`
+`src/extraction/dbcert_lib.mli` is the compiler as a function:
+`compile_sql : ?optim:bool -> string -> (string, error) result` and
+`compile_all : ?optim:bool -> ?debug:bool -> string -> (query_result list, error) result`.
+It performs no I/O, so it can be linked into a js_of_ocaml build. A query
+is typed against the CREATE TABLE statements preceding it in the same
+string. `optim` defaults to `false`, the setting the soundness theorem
+covers. `error` mirrors `ToEJson.v`'s `result` constructor for
+constructor, with lexing, syntax and arity errors added.
+
+`src/extraction/dbcert.ml` is the command line interface and nothing more:
+argument parsing (`-output`, `-link`, `-optim`, `-verbose`), reading the
+input file, and writing `<base>[_<n>].js` with `Util.make_file`
 (`qcert/compiler/extraction/util.ml:100`). With `-link` it prepends
-`Js_runtime.runtime`, which is `qcert/compiler/lib/js_runtime.ml`, a string
+`Dbcert_lib.runtime`, which is `qcert/compiler/lib/js_runtime.ml`, a string
 literal generated from `qcert/runtimes/javascript/qcert-runtime-{core,tostring,sql-date,uri}.js`
-(25 KB). It always appends `module.exports = { query };`.
+(25 KB). It always appends `Dbcert_lib.module_exports`,
+`module.exports = { query };`.
+
+The pretty-printers in `src/extraction/sql_compiler.ml` write into a
+`Buffer.t`, not an `out_channel`, so that nothing on the compiling path
+does I/O; `string_of_query` and `string_of_nra` render them.
+
+`src/tests/test_compile_sql.ml` compiles the whole corpus through the
+library and compares it with the golden files the command line interface
+produced, which keeps the two from drifting apart. `make test` runs it and
+then `src/tests/run-golden.sh`.
 
 Other files in `src/extraction/`: `dbcertJS.ml` and `example.ml` are stale
 (they reference a `Compiler` module and an older `sql_query_to_js` signature
@@ -255,7 +274,7 @@ the verified code):
 | `qcert_lib`: `compiler/lib/*.ml`, `compiler/extraction/{util,logger,sexp,...}.ml`, `js_runtime.ml` | hand-written | no |
 | `plugins_datacert.cmxa`: `Utils`, `Basics`, `Sqlcontext`, `Coq_sql_algebra`, `Sql_ast`, `Sql_parser`, `Sql_lexer`, `ToCoq` | hand-written OCaml in SQLToNRACert, no Coq API | no |
 | `plugins_datacert.cmxa`: `Utils_coq`, `Basics_coq`, `Sqlparser_coq`, `G_sql_parser` | hand-written Coq plugin in SQLToNRACert (only these need Coq's OCaml API) | no |
-| `src/extraction/sql_compiler.ml`, `src/extraction/dbcert.ml` | hand-written (dbcert) | no |
+| `src/extraction/sql_compiler.ml`, `src/extraction/dbcert_lib.ml`, `src/extraction/dbcert.ml` | hand-written (dbcert) | no |
 | `src/runtime/queryExec.js`, `src/dbcertRun.js` | hand-written (dbcert) | no |
 | `qcert/runtimes/javascript/qcert-runtime-*.js` | hand-written (qcert) | no |
 
@@ -267,7 +286,7 @@ the verified code):
    `Qcert`, `SQLFS`, `SQLToNRACert`, `JsAst` and runs the extraction, producing
    `extraction/sql_query_to_js.ml{,i}`.
 3. `ocamlfind ocamlopt -rectypes -package calendar,uri,str` compiles
-   `sql_query_to_js.ml`, `sql_compiler.ml`, `dbcert.ml` against
+   `sql_query_to_js.ml`, `sql_compiler.ml`, `dbcert_lib.ml`, `dbcert.ml` against
    `qcert_lib` (`-I +../coq-qcert -open Qcert_lib`) and `plugins_datacert`
    (`-I +../coq/user-contrib/SQLToNRACert/plugins -open Plugins_datacert`).
 4. Link: `qcert_lib.cmxa` + Coq's `threads, dynlink, clib, config, lib,
@@ -275,6 +294,8 @@ the verified code):
    tactics, toplevel, printing, vernac, stm` + `plugins_datacert.cmxa`
    + `-cclib -lunix` → native executable `dbcert`.
 5. `make install` copies `dbcert` next to `ocamlopt` in the opam switch.
+6. `make test` builds `test_compile_sql` from the same objects minus
+   `dbcert.cmx`, runs it, then runs `tests/run-golden.sh`.
 
 Dependencies that matter for a JavaScript build: `str`, `unix` (through Coq
 libs and `java_service.ml` in qcert), `calendar`, `uri`, and the whole of

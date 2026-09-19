@@ -20,8 +20,8 @@ proofextr: Makefile.coq
 
 PROGRAM=dbcert
 
-MLIFILES=extraction/sql_query_to_js.mli
-MLFILES=extraction/sql_query_to_js.ml extraction/sql_compiler.ml extraction/dbcert.ml
+MLIFILES=extraction/sql_query_to_js.mli extraction/dbcert_lib.mli
+MLFILES=extraction/sql_query_to_js.ml extraction/sql_compiler.ml extraction/dbcert_lib.ml extraction/dbcert.ml
 
 CMI=$(MLIFILES:%.mli=%.cmi)
 CMX=$(MLFILES:%.ml=%.cmx)
@@ -55,8 +55,27 @@ cli: $(PROGRAM)
 .ml.cmo:
 	$(OCAMLC) -c $(FLAGS) $(OTHERLIB) $(QCERTLIB) $(DCERTLIB) $<
 
+LINK=$(OCAMLOPT) $(FLAGS) $(OTHERLIB) $(QCERTLIB) $(COQLIB) $(DCERTLIB) $(COMPILEFLAGS) $(QCMX) $(CCMX) $(DCMX)
+
 $(PROGRAM): $(CMI) $(CMO) $(CMX)
-	$(OCAMLOPT) $(FLAGS) $(OTHERLIB) $(QCERTLIB) $(COQLIB) $(DCERTLIB) -o $@ $(COMPILEFLAGS) $(QCMX) $(CCMX) $(DCMX) $(CMX)
+	$(LINK) -o $@ $(CMX)
+
+## Unit tests for the library
+
+# Everything but the command line interface itself.
+LIBCMX=$(filter-out extraction/dbcert.cmx,$(CMX))
+TESTPROGRAM=test_compile_sql
+
+$(TESTPROGRAM): $(CMI) $(CMO) $(LIBCMX) tests/$(TESTPROGRAM).ml
+	$(OCAMLOPT) -c $(FLAGS) $(OTHERLIB) $(QCERTLIB) $(DCERTLIB) tests/$(TESTPROGRAM).ml
+	$(LINK) -o $@ $(LIBCMX) tests/$(TESTPROGRAM).cmx
+
+# Compile every test query through the library and compare with the
+# golden files, then replay the same corpus through the command line
+# interface and the Node runner.
+test: $(PROGRAM) $(TESTPROGRAM)
+	./$(TESTPROGRAM)
+	./tests/run-golden.sh
 
 # Install dbcert
 BIN=$(dir $(shell which ocamlopt))
@@ -69,6 +88,7 @@ clean: Makefile.coq
 	$(MAKE) -f Makefile.coq cleanall
 	$(MAKE) -C extraction cleanall
 	rm -f $(PROGRAM)
+	rm -f $(TESTPROGRAM)
 	rm -f Makefile.coq
 	rm -f Makefile.coq.conf
 	rm -f _CoqProject
@@ -83,10 +103,6 @@ ifneq ($(QCERT),)
 	(echo " ";) >> _CoqProject
 	(echo "-R $(QCERT)/compiler/core Qcert";) >> _CoqProject
 endif
-
-test:
-	./dbcert -link tests/simple/org1.sql
-	node ./dbcertRun.js tests/simple/org1.js tests/simple/db1.json
 
 package:
 	rm -rf ./$(DBNAME)

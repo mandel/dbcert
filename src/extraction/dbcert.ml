@@ -1,13 +1,24 @@
-open Sql_compiler
+(************************************************************************************)
+(**                                                                                 *)
+(**                             The DBCert Library                                  *)
+(**                                                                                 *)
+(**            LRI, CNRS & Université Paris-Sud, Université Paris-Saclay            *)
+(**                                                                                 *)
+(**                        Copyright 2016-2019 : FormalData                         *)
+(**                                                                                 *)
+(************************************************************************************)
 
-(** Putting everything together **)
+(** The dbcert command line interface.
+
+    All of the compiling happens in {!Dbcert_lib}.  What is left here is
+    argument parsing, reading the input file and writing the output
+    files. *)
 
 let dash72 = "------------------------------------------------------------------------\n"
-let exports = "module.exports = { query };\n"
 
 let output = ref None
 let input_files = ref []
-let runtime = ref ""
+let link = ref false
 let verbose = ref false
 let optim = ref false
 
@@ -19,7 +30,7 @@ let args_list =
   Arg.align
     [ ("-output", Arg.String (fun s -> output := Some s),
        "<file> Generated JavaScript File");
-      ("-link", Arg.Unit (fun () -> runtime := Js_runtime.runtime),
+      ("-link", Arg.Unit (fun () -> link := true),
        "Link the JavaScript runtime");
       ("-optim", Arg.Unit (fun () -> optim := true),
        "With optimizations");
@@ -29,74 +40,56 @@ let args_list =
 
 let anon_args input_files f = input_files := f :: !input_files
 
+let read_file file =
+  let chan = open_in_bin file in
+  let len = in_channel_length chan in
+  let content = really_input_string chan len in
+  close_in chan;
+  content
+
+(* Where the JavaScript for query number [index] of [fileSQL] goes. *)
+let output_file fileSQL index =
+  let base =
+    begin match !output with
+    | None -> Filename.remove_extension fileSQL
+    | Some file -> Filename.remove_extension file
+    end
+  in
+  let postfix = if index > 0 then "_" ^ (string_of_int index) else "" in
+  base ^ postfix ^ ".js"
+
+let emit fileSQL index (q : Dbcert_lib.query_result) =
+  Printf.printf "%s" dash72;
+  Printf.printf "SQLCoq query: %s\n\n" q.Dbcert_lib.sqlcoq;
+  begin match q.Dbcert_lib.debug with
+  | Some d ->
+      Printf.printf "Compilation to SQLAlg succeeded: %s\n\n" d.Dbcert_lib.sqlalg;
+      Printf.printf "Compilation to NRAe succeeded: %s\n\n" d.Dbcert_lib.nraenv;
+      Printf.printf "The optimized NRAe query is: %s\n\n"
+        d.Dbcert_lib.nraenv_optimized
+  | None -> if !verbose then Printf.printf "Compilation to NRAe failed"
+  end;
+  begin match q.Dbcert_lib.javascript with
+  | Ok js ->
+      let runtime = if !link then Dbcert_lib.runtime else "" in
+      let content = runtime ^ js ^ Dbcert_lib.module_exports in
+      if !verbose then Printf.printf "Corresponding JS query: %s\n" content;
+      let file = output_file fileSQL index in
+      Printf.printf "Corresponding JS query generated in: %s\n" file;
+      Util.make_file file content
+  | Error e -> Printf.printf "%s\n" (Dbcert_lib.string_of_error e)
+  end;
+  flush stdout
+
 let _ =
   Arg.parse args_list (anon_args input_files) usage;
   if (List.length !input_files <> 1) then
     Printf.printf "Argument required: file with create and select queries\n"
   else
     let fileSQL = List.nth !input_files 0 in
-    let chanSQL = open_in fileSQL in
-    let bufSQL = Lexing.from_channel chanSQL in
-    let index = ref 0 in (* File counter *)
-    begin try
-      while true do
-        let qSQL = Sql_parser.line Sql_lexer.token bufSQL in
-        begin match qSQL with
-        | Sql_ast.SQL_Create (t, (cols, _)) -> Hashtbl.add ToCoq.tables t cols
-        | Sql_ast.SQL_Query qselect ->
-            begin
-              let ctxt = ToCoq.init_context () in
-              let (schema, _, _) = ctxt in
-              let qSQLCoq = ToCoq.select ctxt qselect in
-              Printf.printf "%s" dash72;
-              Printf.printf "SQLCoq query: %s\n\n" (ToCoq.string_of_sql_query schema qSQLCoq);
-              let qSQLCoqJS = sql_query_to_extracted qSQLCoq in
-              let schemaJS = schema_to_extracted schema in
-              if !verbose then (
-                match Sql_query_to_js.sql_query_to_nra schemaJS qSQLCoqJS with
-                  | Some ((qalg, qNRA), qNRAopt) ->
-                     (Printf.printf "Compilation to SQLAlg succeeded: %a\n\n" pp_query qalg;
-                      Printf.printf "Compilation to NRAe succeeded: %a\n\n" pp_nra qNRA;
-                      Printf.printf "The optimized NRAe query is: %a\n\n" pp_nra qNRAopt)
-                  | None -> Printf.printf "Compilation to NRAe failed"
-              );
-              let qJS = Sql_query_to_js.sql_query_to_js schemaJS !optim qSQLCoqJS in (* XXX optimization on *)
-              (match qJS with
-              | Sql_query_to_js.Success q ->
-                  let content = !runtime ^ q ^ exports in
-                  if !verbose then Printf.printf "Corresponding JS query: %s\n" content;
-                  let base =
-                    begin match !output with
-                    | None -> Filename.remove_extension fileSQL
-                    | Some file -> Filename.remove_extension file
-                    end
-                  in
-                  let postfix = if !index > 0 then "_" ^ (string_of_int !index) else "" in
-                  let output_file = base ^ postfix ^ ".js" in
-                  Printf.printf "Corresponding JS query generated in: %s\n" output_file;
-                  Util.make_file output_file content
-              | Sql_query_to_js.SuccessUpToImp _ -> Printf.printf "Compilation from Imp to JS failed\n"
-              | Sql_query_to_js.Not_weak_well_formed_sqlcoq -> Printf.printf "Compilation failed: SQLCoq query is weak ill formed\n"
-              | Sql_query_to_js.Not_translatable_sqlalg qalg ->
-                  Printf.printf "Compilation failed: SQLAlg query is not translatable:\n\t%a\n" pp_query qalg
-              | Sql_query_to_js.Not_well_formed_sqlalg qalg ->
-                  Printf.printf "Compilation failed: SQLAlg query is ill formed (case 1):\n\t%a\n" pp_query qalg
-              | Sql_query_to_js.Not_more_well_formed_sqlalg qalg ->
-                  Printf.printf "Compilation failed: SQLAlg query is ill formed (case 2):\n\t%a\n" pp_query qalg
-              | Sql_query_to_js.Compilation_nra_js_failed -> Printf.printf "Compilation failed: NRA to JS did not output JS\n");
-              incr index;
-              flush stdout;
-            end
-        | _ -> raise (Sql_lexer.Error "Expecting CREATE or SELECT query")
-        end;
-      done;
-    with
-    | Sql_lexer.Error msg -> failwith ("Lexing error: "^msg)
-    | Sql_parser.Error -> failwith ("At offset "^(string_of_int (Lexing.lexeme_start bufSQL))^": syntax error.\n")
-    | Sql_lexer.Eof -> Printf.printf "Compilation to JavaScript finished\n";
-    end;
-    close_in chanSQL
-
-(* Current test:
-   ./compiler test.sql
- *)
+    match Dbcert_lib.compile_all ~optim:!optim ~debug:!verbose
+            (read_file fileSQL) with
+    | Ok queries ->
+        List.iteri (emit fileSQL) queries;
+        Printf.printf "Compilation to JavaScript finished\n"
+    | Error e -> failwith (Dbcert_lib.string_of_error e)

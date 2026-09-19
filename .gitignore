@@ -19,6 +19,7 @@ sql_query_to_js.ml
 sql_query_to_js.mli
 dbcert
 dbcert.byte
+test_compile_sql
 _CoqProject
 qcert
 dbcert-*
