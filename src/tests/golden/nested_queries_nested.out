@@ -1,0 +1,45 @@
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a1 AS _c0_a1, max(_c0.b1) AS _c1 FROM (TABLE t1) _c0(a1, b1) WHERE TRUE GROUP BY _c0.a1
+
+Corresponding JS query generated in: nested_queries_nested.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a1 AS _c0_a1 FROM (TABLE t1) _c0(a1, b1) WHERE TRUE GROUP BY _c0.a1 HAVING EXISTS (SELECT _c1.a2 AS _c1_a2 FROM (TABLE t2) _c1(a2, b2) WHERE TRUE GROUP BY _c1.a2 HAVING (sum((1) plus ((0) mult (_c0.a1)))) = (10))
+
+Corresponding JS query generated in: nested_queries_nested_1.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a1 AS _c0_a1 FROM (TABLE t1) _c0(a1, b1) WHERE TRUE GROUP BY _c0.a1 HAVING EXISTS (SELECT _c1.a2 AS _c1_a2 FROM (TABLE t2) _c1(a2, b2) WHERE TRUE GROUP BY _c1.a2 HAVING (sum((1) plus ((0) mult (_c1.a2)))) = (10))
+
+Corresponding JS query generated in: nested_queries_nested_2.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a1 AS _c0_a1 FROM (TABLE t1) _c0(a1, b1) WHERE TRUE GROUP BY _c0.a1 HAVING EXISTS (SELECT _c1.a2 AS _c1_a2 FROM (TABLE t2) _c1(a2, b2) WHERE TRUE GROUP BY _c1.a2 HAVING (sum((1) plus ((0) mult (_c1.a2)))) = (2))
+
+Corresponding JS query generated in: nested_queries_nested_3.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a1 AS _c0_a1 FROM (TABLE t1) _c0(a1, b1) WHERE TRUE GROUP BY _c0.a1 HAVING EXISTS (SELECT _c1.a2 AS _c1_a2 FROM (TABLE t2) _c1(a2, b2) WHERE TRUE GROUP BY _c1.a2 HAVING (sum(1)) = (2))
+
+Corresponding JS query generated in: nested_queries_nested_4.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a1 AS _c0_a1 FROM (TABLE t1) _c0(a1, b1) WHERE TRUE GROUP BY _c0.a1 HAVING EXISTS (SELECT _c1.a2 AS _c1_a2 FROM (TABLE t2) _c1(a2, b2) WHERE TRUE GROUP BY _c1.a2 HAVING (sum(1)) = (10))
+
+Corresponding JS query generated in: nested_queries_nested_5.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a1 AS _c0_a1 FROM (TABLE t1) _c0(a1, b1) WHERE TRUE GROUP BY _c0.a1 HAVING EXISTS (SELECT _c1.a2 AS _c1_a2 FROM (TABLE t2) _c1(a2, b2) WHERE TRUE GROUP BY _c1.a2 HAVING ((sum((1) plus ((0) mult (_c0.a1)))) plus (sum((1) plus ((0) mult (_c1.a2))))) = (12))
+
+Corresponding JS query generated in: nested_queries_nested_6.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a1 AS _c0_a1 FROM (TABLE t1) _c0(a1, b1) WHERE TRUE GROUP BY _c0.a1 HAVING EXISTS (SELECT _c1.a2 AS _c1_a2 FROM (TABLE t2) _c1(a2, b2) WHERE TRUE GROUP BY _c1.a2 HAVING (sum(((1) plus ((0) mult (_c0.a1))) plus ((0) mult (_c1.a2)))) = (2))
+
+Corresponding JS query generated in: nested_queries_nested_7.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a1 AS _c0_a1 FROM (TABLE t1) _c0(a1, b1) WHERE TRUE GROUP BY _c0.a1 HAVING EXISTS (SELECT _c1.a2 AS _c1_a2 FROM (TABLE t2) _c1(a2, b2) WHERE TRUE GROUP BY _c1.a2 HAVING (sum(((1) plus ((0) mult (_c0.a1))) plus ((0) mult (_c1.a2)))) = (3))
+
+Corresponding JS query generated in: nested_queries_nested_8.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a1 AS _c0_a1 FROM (TABLE t1) _c0(a1, b1) WHERE TRUE GROUP BY _c0.a1 HAVING EXISTS (SELECT _c1.a2 AS _c1_a2 FROM (TABLE t2) _c1(a2, b2) WHERE TRUE GROUP BY _c1.a2 HAVING (sum(((1) plus ((0) mult (_c0.a1))) plus ((0) mult (_c1.b2)))) = (2))
+
+Corresponding JS query generated in: nested_queries_nested_9.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a1 AS _c0_a1 FROM (TABLE t1) _c0(a1, b1) WHERE TRUE GROUP BY _c0.a1 HAVING EXISTS (SELECT _c1.a2 AS _c1_a2 FROM (TABLE t2) _c1(a2, b2) WHERE TRUE GROUP BY _c1.a2 HAVING (sum(((1) plus ((0) mult (_c0.a1))) plus ((0) mult (_c1.b2)))) = (3))
+
+Corresponding JS query generated in: nested_queries_nested_10.js
+Compilation to JavaScript finished

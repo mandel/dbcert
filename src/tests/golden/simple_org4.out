@@ -1,0 +1,5 @@
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.age AS _c0_age, count(_c0.name) AS _c1 FROM (TABLE employees) _c0(name, age) WHERE TRUE GROUP BY _c0.age
+
+Corresponding JS query generated in: simple_org4.js
+Compilation to JavaScript finished

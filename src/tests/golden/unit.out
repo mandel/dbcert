@@ -1,0 +1,237 @@
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a AS _c0_a FROM (TABLE table1) _c0(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit_1.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a AS g FROM (TABLE table1) _c0(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit_2.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT t.d AS g FROM (TABLE table1) t(d, e, f) WHERE TRUE
+
+Corresponding JS query generated in: unit_3.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c) WHERE (_c0.a) = (_c0.b)
+
+Corresponding JS query generated in: unit_4.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a AS _c0_a, _c0.b AS _c0_b FROM (TABLE table1) _c0(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit_5.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a AS _c0_a, _c0.b AS _c0_b FROM (TABLE table1) _c0(a, b, c) WHERE (_c0.a) = (_c0.b)
+
+Corresponding JS query generated in: unit_6.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a AS _c0_a, (_c0.a) plus (_c0.b) AS _c1 FROM (TABLE table1) _c0(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit_7.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE (t1.a) < (4)
+
+Corresponding JS query generated in: unit_8.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE (t1.a) > (4)
+
+Corresponding JS query generated in: unit_9.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE (t1.a) = (4)
+
+Corresponding JS query generated in: unit_10.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE (t1.a) <> (4)
+
+Corresponding JS query generated in: unit_11.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE ((t1.a) < (4)) OR ((t1.a) >= (7))
+
+Corresponding JS query generated in: unit_12.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c) WHERE ((2) mult (_c0.a)) < (4)
+
+Corresponding JS query generated in: unit_13.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT t1.d AS g FROM (TABLE table1) t1(d, e, f), (TABLE table0) _c0(a, b, c) WHERE (t1.d) = (_c0.a)
+
+Corresponding JS query generated in: unit_14.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT t1.d AS g FROM (TABLE table1) _c0(a, b, c), (TABLE table0) t1(d, e, f) WHERE (t1.d) = (_c0.a)
+
+Corresponding JS query generated in: unit_15.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c) WHERE ((_c0.a) plus (_c0.b)) <= ALL (SELECT (t0.a0) plus (t1.c1) AS a0_plus_c1 FROM (TABLE table0) t0(a0, b0, c0), (TABLE table1) t1(a1, b1, c1) WHERE TRUE)
+
+Corresponding JS query generated in: unit_16.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a AS _c0_a, count(_c0.b) AS count_b FROM (TABLE table1) _c0(a, b, c) WHERE TRUE GROUP BY _c0.a HAVING (avg(_c0.c)) <= ALL (SELECT _c1.a AS _c1_a FROM (TABLE table1) _c1(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_17.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a AS _c0_a, count(_c0.b) AS count_b FROM (TABLE table1) _c0(a, b, c) WHERE TRUE GROUP BY _c0.a HAVING (sum(_c0.c)) <= ALL (SELECT _c1.a AS _c1_a FROM (TABLE table1) _c1(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_18.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a AS _c0_a, count(_c0.b) AS count_b FROM (TABLE table1) _c0(a, b, c) WHERE TRUE GROUP BY _c0.a HAVING (sum(_c0.c)) <= ANY (SELECT _c1.a AS _c1_a FROM (TABLE table1) _c1(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_19.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT (_c0.a) plus ((_c0.b) mult (sum(_c0.c))) AS _c1 FROM (TABLE table1) _c0(a, b, c) WHERE TRUE GROUP BY _c0.a, _c0.b
+
+Corresponding JS query generated in: unit_20.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a AS _c0_a, _c0.c AS _c0_c, sum(_c0.b) AS sumb FROM (TABLE table0) _c0(a, b, c) WHERE TRUE GROUP BY _c0.a, _c0.c HAVING _c0.a IN (SELECT _c1.b AS _c1_b FROM (TABLE table1) _c1(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_21.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c), (SELECT _c1.a AS a1 FROM (TABLE table1) _c1(a, b, c) WHERE TRUE) t1(a1) WHERE TRUE
+
+Corresponding JS query generated in: unit_22.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c), (SELECT _c1.a AS a1 FROM (TABLE table1) _c1(a, b, c) WHERE TRUE) t1(d) WHERE TRUE
+
+Corresponding JS query generated in: unit_23.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c), (SELECT * FROM (TABLE table1) _c1(a, b, c) WHERE TRUE) t1(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit_24.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c), (SELECT * FROM (TABLE table1) _c1(a, b, c) WHERE TRUE) t1(d, e, f) WHERE TRUE
+
+Corresponding JS query generated in: unit_25.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c), (SELECT * FROM (TABLE table0) t0(d, e, f), (TABLE table1) _c1(a, b, c) WHERE TRUE) t2(d, e, f, a, b, c) WHERE (_c0.a) = (t2.b)
+
+Corresponding JS query generated in: unit_26.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c), (SELECT * FROM (TABLE table0) t0(d, e, f), (TABLE table1) _c0(a, b, c) WHERE TRUE) t2(d, e, f, a, b, c) WHERE (t1.a) = (t2.b)
+
+Corresponding JS query generated in: unit_27.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c) WHERE (_c0.a) = (3)
+
+Corresponding JS query generated in: unit_28.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c) WHERE (_c0.a) = (3)
+
+Corresponding JS query generated in: unit_29.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c) WHERE _c0.a IN (SELECT _c1.a AS _c1_a FROM (TABLE table1) _c1(a, b, c) WHERE (_c1.b) = (4))
+
+Corresponding JS query generated in: unit_30.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t2(a, b, c) WHERE t2.a, t2.b IN (SELECT t1.a AS t1_a, t1.b AS t1_b FROM (TABLE table1) t1(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_31.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE ((t1.a) plus (3)) <= ALL (SELECT _c0.b AS _c0_b FROM (TABLE table0) _c0(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_32.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE EXISTS (SELECT * FROM (TABLE table0) _c0(a, b, c) WHERE (_c0.a) = (t1.b))
+
+Corresponding JS query generated in: unit_33.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT t1.a1 AS t1_a1 FROM (TABLE table1) t1(a1, b1, b2) WHERE TRUE GROUP BY t1.a1 HAVING EXISTS (SELECT t4.a4 AS t4_a4 FROM (TABLE table0) t4(a4, b4, c4) WHERE TRUE GROUP BY t4.a4 HAVING (sum((1) plus ((0) mult (t1.a1)))) = (10))
+
+Corresponding JS query generated in: unit_34.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT sum(_c0.a) AS _c1 FROM (TABLE table1) _c0(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit_35.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE NOT (EXISTS (SELECT * FROM (TABLE table0) _c0(a, b, c) WHERE (_c0.a) = (t1.b)))
+
+Corresponding JS query generated in: unit_36.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT t1.a1 AS t1_a1 FROM (TABLE table1) t1(a1, b1, b2) WHERE TRUE GROUP BY t1.a1 HAVING NOT (EXISTS (SELECT t4.a4 AS t4_a4 FROM (TABLE table0) t4(a4, b4, c4) WHERE TRUE GROUP BY t4.a4 HAVING (sum((1) plus ((0) mult (t1.a1)))) = (10)))
+
+Corresponding JS query generated in: unit_37.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE NOT (((t1.a) plus (3)) <= ALL (SELECT _c0.b AS _c0_b FROM (TABLE table0) _c0(a, b, c) WHERE TRUE))
+
+Corresponding JS query generated in: unit_38.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.a AS _c0_a, count(_c0.b) AS count_b FROM (TABLE table1) _c0(a, b, c) WHERE TRUE GROUP BY _c0.a HAVING NOT ((sum(_c0.c)) <= ANY (SELECT _c1.a AS _c1_a FROM (TABLE table1) _c1(a, b, c) WHERE TRUE))
+
+Corresponding JS query generated in: unit_39.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t2(a, b, c) WHERE NOT (t2.a, t2.b IN (SELECT t1.a AS t1_a, t1.b AS t1_b FROM (TABLE table1) t1(a, b, c) WHERE TRUE))
+
+Corresponding JS query generated in: unit_40.js
+------------------------------------------------------------------------
+SQLCoq query: TABLE table1
+
+Corresponding JS query generated in: unit_41.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT t2.a AS t2_a FROM (TABLE table1) t2(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit_42.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT t2.a AS t2_a FROM (TABLE table1) t2(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit_43.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.b AS _c0_b FROM (TABLE table1) _c0(a, b, c) WHERE _c0.a, _c0.b, _c0.c IN (TABLE table0)
+
+Corresponding JS query generated in: unit_44.js
+------------------------------------------------------------------------
+SQLCoq query: (SELECT * FROM (TABLE table1) _c0(a, b, c) WHERE TRUE) UNION (SELECT _c1.a AS _c0_a, _c1.b AS _c0_b, _c1.c AS _c0_c FROM (TABLE table0) _c1(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_45.js
+------------------------------------------------------------------------
+SQLCoq query: (SELECT * FROM (TABLE table1) _c0(a, b, c) WHERE TRUE) INTERSECT (SELECT _c1.a AS _c0_a, _c1.b AS _c0_b, _c1.c AS _c0_c FROM (TABLE table0) _c1(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_46.js
+------------------------------------------------------------------------
+SQLCoq query: (SELECT * FROM (TABLE table1) _c0(a, b, c) WHERE TRUE) EXCEPT (SELECT _c1.a AS _c0_a, _c1.b AS _c0_b, _c1.c AS _c0_c FROM (TABLE table0) _c1(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_47.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) _c0(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit_48.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table2) _c0(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit_49.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT opp (_c0.a) AS _c1 FROM (TABLE table1) _c0(a, b, c) WHERE TRUE
+
+Corresponding JS query generated in: unit_50.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT (2) mult ((_c0.a) plus (_c0.c)) AS twotimesaplusc, _c0.b AS b2 FROM (TABLE table1) _c0(a, b, c) WHERE TRUE GROUP BY (_c0.a) plus (_c0.c), _c0.b HAVING (_c0.b) > (1)
+
+Compilation failed: SQLAlg query is not translatable:
+	(Q_Gamma [(Select_As (A_Expr (F_Expr (Symbol "mult"%string) [(F_Constant (Value_Z (Some 2))); (F_Expr (Symbol "plus"%string) [(F_Dot (Attr_Z "_c0.a"%string)); (F_Dot (Attr_Z "_c0.c"%string))])])) (Attr_Z "twotimesaplusc"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "_c0.b"%string))) (Attr_Z "b2"%string))] [(A_Expr (F_Expr (Symbol "plus"%string) [(F_Dot (Attr_Z "_c0.a"%string)); (F_Dot (Attr_Z "_c0.c"%string))])); (A_Expr (F_Dot (Attr_Z "_c0.b"%string)))] (Sql_Pred (Predicate "<"%string) [(A_Expr (F_Constant (Value_Z (Some 1)))); (A_Expr (F_Dot (Attr_Z "_c0.b"%string)))]) (Q_Pi (_Select_List [(Select_As (A_Expr (F_Dot (Attr_Z "table1.a"%string))) (Attr_Z "_c0.a"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.b"%string))) (Attr_Z "_c0.b"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.c"%string))) (Attr_Z "_c0.c"%string))]) (Q_Table (Rel "table1"%string))))
+------------------------------------------------------------------------
+SQLCoq query: SELECT (_c0.a) plus (_c0.b) AS a_b, count(_c0.b) AS count_b FROM (TABLE table1) _c0(a, b, c) WHERE TRUE GROUP BY (_c0.a) plus (_c0.b) HAVING (sum(_c0.c)) <= ALL (SELECT _c1.a AS _c1_a FROM (TABLE table1) _c1(a, b, c) WHERE TRUE)
+
+Compilation failed: SQLAlg query is not translatable:
+	(Q_Gamma [(Select_As (A_Expr (F_Expr (Symbol "plus"%string) [(F_Dot (Attr_Z "_c0.a"%string)); (F_Dot (Attr_Z "_c0.b"%string))])) (Attr_Z "a_b"%string)); (Select_As (A_agg count (F_Dot (Attr_Z "_c0.b"%string))) (Attr_Z "count_b"%string))] [(A_Expr (F_Expr (Symbol "plus"%string) [(F_Dot (Attr_Z "_c0.a"%string)); (F_Dot (Attr_Z "_c0.b"%string))]))] (Sql_Quant Forall_F (Predicate "<="%string) [(A_agg sum (F_Dot (Attr_Z "_c0.c"%string)))] (Q_Pi (_Select_List [(Select_As (A_Expr (F_Dot (Attr_Z "_c1.a"%string))) (Attr_Z "_c1_a"%string))]) (Q_Pi (_Select_List [(Select_As (A_Expr (F_Dot (Attr_Z "table1.a"%string))) (Attr_Z "_c1.a"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.b"%string))) (Attr_Z "_c1.b"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.c"%string))) (Attr_Z "_c1.c"%string))]) (Q_Table (Rel "table1"%string))))) (Q_Pi (_Select_List [(Select_As (A_Expr (F_Dot (Attr_Z "table1.a"%string))) (Attr_Z "_c0.a"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.b"%string))) (Attr_Z "_c0.b"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.c"%string))) (Attr_Z "_c0.c"%string))]) (Q_Table (Rel "table1"%string))))
+------------------------------------------------------------------------
+SQLCoq query: SELECT (_c0.a) plus (_c0.b) AS a_b, count(_c0.b) AS count_b FROM (TABLE table1) _c0(a, b, c) WHERE TRUE GROUP BY (_c0.a) plus (_c0.b) HAVING (sum(_c0.c)) <= ALL (SELECT _c1.a AS _c1_a FROM (TABLE table1) _c1(a, b, c) WHERE TRUE)
+
+Compilation failed: SQLAlg query is not translatable:
+	(Q_Gamma [(Select_As (A_Expr (F_Expr (Symbol "plus"%string) [(F_Dot (Attr_Z "_c0.a"%string)); (F_Dot (Attr_Z "_c0.b"%string))])) (Attr_Z "a_b"%string)); (Select_As (A_agg count (F_Dot (Attr_Z "_c0.b"%string))) (Attr_Z "count_b"%string))] [(A_Expr (F_Expr (Symbol "plus"%string) [(F_Dot (Attr_Z "_c0.a"%string)); (F_Dot (Attr_Z "_c0.b"%string))]))] (Sql_Quant Forall_F (Predicate "<="%string) [(A_agg sum (F_Dot (Attr_Z "_c0.c"%string)))] (Q_Pi (_Select_List [(Select_As (A_Expr (F_Dot (Attr_Z "_c1.a"%string))) (Attr_Z "_c1_a"%string))]) (Q_Pi (_Select_List [(Select_As (A_Expr (F_Dot (Attr_Z "table1.a"%string))) (Attr_Z "_c1.a"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.b"%string))) (Attr_Z "_c1.b"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.c"%string))) (Attr_Z "_c1.c"%string))]) (Q_Table (Rel "table1"%string))))) (Q_Pi (_Select_List [(Select_As (A_Expr (F_Dot (Attr_Z "table1.a"%string))) (Attr_Z "_c0.a"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.b"%string))) (Attr_Z "_c0.b"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.c"%string))) (Attr_Z "_c0.c"%string))]) (Q_Table (Rel "table1"%string))))
+------------------------------------------------------------------------
+SQLCoq query: SELECT t1.a_b AS t1_a_b, count(t1.b) AS count_b FROM (SELECT (_c0.a) plus (_c0.b) AS a_b, _c0.b AS _c0_b, _c0.c AS _c0_c FROM (TABLE table1) _c0(a, b, c) WHERE TRUE) t1(a_b, b, c) WHERE TRUE GROUP BY t1.a_b HAVING (sum(t1.c)) <= ALL (SELECT _c1.a AS _c1_a FROM (TABLE table1) _c1(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_54.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE t1.a, t1.b IN (SELECT t1.a AS t1_a, t1.b AS t1_b FROM (TABLE table1) t1(a, b, c) WHERE TRUE)
+
+Compilation failed: SQLAlg query is ill formed (case 1):
+	(Q_Sigma (Sql_In [(Select_As (A_Expr (F_Dot (Attr_Z "t1.a"%string))) (Attr_Z "t1_a"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "t1.b"%string))) (Attr_Z "t1_b"%string))] (Q_Pi (_Select_List [(Select_As (A_Expr (F_Dot (Attr_Z "t1.a"%string))) (Attr_Z "t1_a"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "t1.b"%string))) (Attr_Z "t1_b"%string))]) (Q_Pi (_Select_List [(Select_As (A_Expr (F_Dot (Attr_Z "table1.a"%string))) (Attr_Z "t1.a"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.b"%string))) (Attr_Z "t1.b"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.c"%string))) (Attr_Z "t1.c"%string))]) (Q_Table (Rel "table1"%string))))) (Q_Pi (_Select_List [(Select_As (A_Expr (F_Dot (Attr_Z "table1.a"%string))) (Attr_Z "t1.a"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.b"%string))) (Attr_Z "t1.b"%string)); (Select_As (A_Expr (F_Dot (Attr_Z "table1.c"%string))) (Attr_Z "t1.c"%string))]) (Q_Table (Rel "table1"%string))))
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE t1.a, t1.b IN (SELECT t2.a AS t2_a, t2.b AS t2_b FROM (TABLE table1) t2(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_56.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT * FROM (TABLE table1) t1(a, b, c) WHERE t1.a, t1.b IN (SELECT _c0.a AS _c0_a, _c0.b AS _c0_b FROM (TABLE table1) _c0(a, b, c) WHERE TRUE)
+
+Corresponding JS query generated in: unit_57.js
+Compilation to JavaScript finished

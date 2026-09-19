@@ -1,0 +1,5 @@
+------------------------------------------------------------------------
+SQLCoq query: SELECT avg(_c0.age) AS _c1 FROM (TABLE employees) _c0(name, age) WHERE (_c0.age) > (32)
+
+Corresponding JS query generated in: simple_org3.js
+Compilation to JavaScript finished

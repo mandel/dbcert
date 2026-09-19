@@ -6,18 +6,18 @@ OCaml from hand-written OCaml and JavaScript.
 
 Status of the sources this map was built from (see DECISIONS.md, D1):
 
-| Repository | Pin used by `coq-dbcert.opam` | Read for this map |
+| Repository | Pin used by `coq-dbcert.opam` | Read at |
 |---|---|---|
-| dbcert (this repo) | `main` @ 74641df | yes, in full |
-| Q*cert `coq-qcert` | `https://github.com/querycert/qcert` tag `v2.1.1` | yes (clone at `v2.1.1`, plus `master`) |
-| JsAst `coq-jsast` | opam `coq-jsast.2.0.0` (`https://github.com/querycert/jsast`) | yes (clone, tags `v2.0.0`..`v4.0.0`) |
-| SQLFormalSemantics `coq-sqlformalsemantics` | `https://framagit.org/formaldata/sqlformalsemantics` branch `with-floats` | **no**, host blocked by the session network policy |
-| SQLToNRACert `coq-sqltonracert` | `https://framagit.org/formaldata/sqltonracert` branch `main` | **no**, host blocked by the session network policy |
+| dbcert (this repo) | `main` | 74641df |
+| Q*cert `coq-qcert` | `github.com/querycert/qcert` tag `v2.1.1` | v2.1.1 (and `master` e112de6 for comparison) |
+| JsAst `coq-jsast` | opam `coq-jsast.2.0.0` (`github.com/querycert/jsast`) | v2.0.0 (and v3.0.0, v4.0.0) |
+| SQLFormalSemantics `coq-sqlformalsemantics` | framagit `with-floats` | `mandel/sqlformalsemantics` branch `with-floats` @ ed00030 |
+| SQLToNRACert `coq-sqltonracert` | framagit `main` | `mandel/sqltonracert` branch `main` @ 7d64ca2 |
 
-Everything below that concerns the two framagit repositories is inferred from
-the module names dbcert imports, from the dbcert build rules, and from the
-OOPSLA 2022 paper. Those items are marked *(inferred)* and must be checked
-against the sources once they are reachable.
+The two FormalData repositories are read through the GitHub mirrors under
+`mandel/`, because `framagit.org` is not reachable from this environment
+(DECISIONS.md, D1). Everything below is read from sources; nothing is
+inferred.
 
 ## 1. Pipeline
 
@@ -53,36 +53,61 @@ JavaScript source text  (function `query(constants)`)
 JSON rows
 ```
 
-### (a) Lexing and parsing *(inferred)*
+### (a) Lexing and parsing (SQLToNRACert, hand-written OCaml)
 
-* Entry points used by dbcert: `Sql_parser.line Sql_lexer.token` on a
-  `Lexing.lexbuf` (`src/extraction/dbcert.ml:43`), exceptions
-  `Sql_lexer.Error`, `Sql_lexer.Eof`, `Sql_parser.Error`.
-* AST: `Sql_ast.SQL_Create (table, (cols, _))` and `Sql_ast.SQL_Query select`
-  (`src/extraction/dbcert.ml:45-46`).
-* Where it lives: these modules are not in dbcert nor in qcert. `src/Makefile`
-  links `plugins_datacert.cmxa` from
-  `$(coqlib)/user-contrib/SQLToNRACert/plugins` with `-open Plugins_datacert`
-  (`src/Makefile:35`), and it also links *the OCaml libraries of Coq
-  itself* (`clib`, `kernel`, `library`, `vernac`, `stm`, `toplevel`,
-  `printing`, `tactics`, ... via `CCMX`/`COQLIB`, `src/Makefile:31,36`) with
-  `-rectypes`. So the SQL front end is packaged as a Coq plugin inside
-  SQLToNRACert and depends on Coq's own OCaml API. This is the single most
-  important fact for the js_of_ocaml work: a browser bundle cannot link Coq's
-  `vernac`/`stm`/`toplevel` libraries, so the parser and `ToCoq` must be
-  decoupled from the plugin (Phase 1).
+All in `sqltonracert/src/plugins/`:
 
-### (b) Name resolution and typing *(inferred)*
+* `sql_parser/sql_lexer.mll` (ocamllex) and `sql_parser/sql_parser.mly`
+  (menhir, start symbol `line : Sql_ast.sql_line`).
+* Surface AST `sql_parser/sql_ast.ml`: `sql_line = SQL_Create | SQL_Query |
+  SQL_Insert`, plus `sql_query`, `sql_formula`, `from_item`, `from_atom`,
+  `aggregate_term`, `funterm`, `grpby_item`, `order_by`, `sql_create`,
+  `sql_insert`.
+* dbcert calls `Sql_parser.line Sql_lexer.token` on a `Lexing.lexbuf`
+  (`src/extraction/dbcert.ml:43`) and matches `Sql_ast.SQL_Create` /
+  `Sql_ast.SQL_Query` (`src/extraction/dbcert.ml:45-46`).
+* Keywords accepted by the lexer: `all and any as asc avg bool boolean
+  count create desc distinct except exists false foreign from having in
+  insert int integer intersect into key like max min not null or primary
+  references select sum table text true union values varchar where`.
+  Operator precedence follows PostgreSQL (`sql_parser.mly:25-31`).
+* Note that the grammar accepts `INSERT`, `ORDER BY` and `DISTINCT`, which
+  the SQLCoq translation in `toCoq.ml` does not necessarily carry through;
+  the exact accepted subset has to be established by testing, not by
+  reading the grammar alone (Phase 3, DATA-MODEL.md).
 
-* `ToCoq.tables : (string, cols) Hashtbl.t` collects `CREATE TABLE` schemas
-  (`src/extraction/dbcert.ml:45`).
-* `ToCoq.init_context () = (schema, _, _)` and `ToCoq.select ctxt qselect`
-  produce a `ToCoq.sql_query` whose leaves are typed
-  (`Basics.typed_attribute_name = (relname option * name) * coltype`,
-  `Basics.coltype = TInt | TString | TBool | TDouble`, `Basics.value =
-  VNull | VString | VInt | VBool | VFloat`), see `src/extraction/sql_compiler.ml`.
-* `ToCoq.string_of_sql_query` is the pretty-printer used for the
-  `SQLCoq query:` line printed by the CLI.
+### (b) Name resolution and typing (SQLToNRACert, hand-written OCaml)
+
+`sqltonracert/src/plugins/sql_parser/toCoq.ml` (455 lines):
+
+* `ToCoq.tables : (relname, typed_aname list) Hashtbl.t` collects
+  `CREATE TABLE` schemas; `ToCoq.create_table` fills it.
+* `ToCoq.init_context : unit -> context` where
+  `context = context_tables * context_aggterms * context_relnames`;
+  `ToCoq.select : context -> Sql_ast.sql_query -> ToCoq.sql_query` is the
+  typing/elaboration pass (`toCoq.ml:368`), built on
+  `sql_query_to_coq` (`toCoq.ml:264`), `sql_formula_to_coq`,
+  `from_item_to_coq`, `aggregate_term_to_coq`.
+* `ToCoq.string_of_sql_query` (`toCoq.ml:378`) is the pretty-printer the
+  CLI uses for its `SQLCoq query:` line.
+* Types come from `plugins/common/basics.ml`
+  (`coltype = TInt | TString | TBool | TDouble`,
+  `value = VNull | VString | VInt | VBool | VFloat`,
+  `typed_attribute_name = (relname option * aname) * coltype`) and
+  `plugins/common/coq_sql_algebra.ml` (`funterm`, `aggterm`, `select`,
+  `sql_formula`).
+
+**The front end is Coq-free OCaml.** `plugins_datacert.mlpack` packs
+thirteen modules. Only two of them touch Coq's OCaml API:
+`common/utils_coq.ml` (builds Coq terms via `Coqlib.lib_ref` / `UnivGen`)
+and `sql_parser/g_sql_parser.mlg` (the `Parse_sql` vernacular command, used
+only by `plugins/sql_parser/Test.v`). The modules dbcert actually needs —
+`Utils`, `Basics`, `Sqlcontext`, `Coq_sql_algebra`, `Sql_ast`, `Sql_parser`,
+`Sql_lexer`, `ToCoq` — form a closed, Coq-independent subgraph. That is why
+`src/Makefile` linking Coq's `kernel`/`vernac`/`stm` libraries
+(`src/Makefile:31,36`) is an artefact of packaging, not a real dependency,
+and why splitting the pack into a plain OCaml library plus a thin Coq
+plugin is a small upstream change (DECISIONS.md, D3).
 
 ### (c) Marshalling into the extracted types (dbcert, hand-written)
 
@@ -123,9 +148,15 @@ JSON rows
   runs Q*cert's NRAᵉ/NNRC/NNRSimp optimisers through the generic driver),
   (2) `imp2JS` (ImpEJson → JsAst → JavaScript text, Q*cert's unverified
   back end), (3) the JS runtime that implements the ImpEJson operators.
-* `Axiom FAAC : AxiomFloat.float_add_assoc_comm` (associativity and
-  commutativity of float addition, needed by the `with-floats` branch of
-  SQLFS; documented upstream in `sqltonracert/src/jsql/aux/AxiomFloat.v`).
+* `Axiom FAAC : AxiomFloat.float_add_assoc_comm` instantiates the record
+  declared in `sqltonracert/src/jsql/aux/AxiomFloat.v`, i.e. assumes float
+  addition is associative and commutative. That file is explicit that this
+  is **false** for IEEE arithmetic, and that its use is confined to the
+  correctness of `sum` and `avg` on floats; the compiler's own correctness
+  and the other aggregates, functions and predicates do not depend on it.
+  The same file declares three further axioms it argues are valid but
+  unprovable because the functions are only realised at extraction:
+  `float_max_assoc`, `float_max_comm` and `float_of_int_pos`.
 
 Extraction (`src/extraction/SQLJSExtraction.v`):
 
@@ -135,6 +166,29 @@ Extraction (`src/extraction/SQLJSExtraction.v`):
   `Z` to OCaml native `int`; Q*cert's `ExtrOcamlFloatNatIntZInt` maps
   `PrimFloat.float` to OCaml `float`. Strings are `char list`
   (`ExtrOcamlString`). **No Zarith.** Consequences are in DECISIONS.md (D2).
+
+SQLFormalSemantics modules on the verified path (`with-floats`, `src/`):
+
+| Role | File | Entry point |
+|---|---|---|
+| SQLCoq syntax and semantics | `data/sql/Sql.v` | `eval_sql_query` (`Sql.v:672`) |
+| SQLCoq → SQLAlg | `data/sql/SqlAlgebra.v` | `sql_query_to_alg` (`SqlAlgebra.v:544`), sound by `sql_query_to_alg_is_sound` (`SqlAlgebra.v:1320`) |
+| Well-formedness check | `data/sql/SqlAlgebra.v` | `weak_well_formed_q` (`SqlAlgebra.v:634`), `well_formed_q` (`SqlAlgebra.v:3167`) |
+| Algebraic optimiser | `data/sql/SqlAlgebra.v` | `query_optim` (`SqlAlgebra.v:3463`), sound by `query_optim_is_sound` (`SqlAlgebra.v:3781`) |
+| Three-valued logic | `logic/Bool3.v` | `unknown3` |
+| Values, tuples, instances | `data/proof_of_concept/{Values,TuplesImpl,GenericInstance,SqlSyntax}.v` | — |
+| Sets and bags | `common/sets/{FiniteSet,FiniteBag,FiniteCollection}.v` | `Fset`, `Febag` |
+
+SQLToNRACert modules on the verified path (`main`, `src/jsql/`):
+
+| Role | File | Entry point |
+|---|---|---|
+| SQLAlg → NRAᵉ | `query/QueryToNRAEnv.v` | `query_to_nraenv_top` (`QueryToNRAEnv.v:3114`), sound by `query_to_nraenv_top_is_sound` (`QueryToNRAEnv.v:3116`) |
+| Translatability / well-formedness | `query/QueryToNRAEnv.v` | `is_translatable_q` (`:477`), `more_well_formed_q` (`:1459`) |
+| Formulas | `formula/FormulaToNRAEnv.v` | — |
+| Instances → NRAᵉ bindings | `instance/InstanceToNRAEnv.v` | `instance_to_bindings` (`:44`), `well_sorted_instance` (`:49`) |
+| Tuple/value model instantiation | `data/TnullTD.v`, `query/TnullQN.v`, `term/Tnull*.v`, `env/TnullEN.v` | the `TNull` instance used by dbcert |
+| Float axioms | `aux/AxiomFloat.v` | `float_max_assoc`, `float_max_comm`, `float_of_int_pos`, record `float_add_assoc_comm` |
 
 Q*cert modules on the verified path (tag `v2.1.1`, `compiler/core/`):
 
@@ -199,7 +253,8 @@ the verified code):
 | `src/extraction/sql_query_to_js.ml{,i}` (generated) | extracted from `ToEJson.v` + SQLFS + SQLToNRACert + Q*cert | proofs cover SQLCoq→ImpEJson (no optimisation) |
 | `qcert_lib` (`qcert/_build/.../qcert_lib.cmxa`): `core.ml` | extracted from Q*cert | partially (see qcert's `CompCorrectness.v`) |
 | `qcert_lib`: `compiler/lib/*.ml`, `compiler/extraction/{util,logger,sexp,...}.ml`, `js_runtime.ml` | hand-written | no |
-| `plugins_datacert.cmxa` (Sql_lexer, Sql_parser, Sql_ast, ToCoq, Basics, Coq_sql_algebra, ...) *(inferred)* | hand-written Coq plugin in SQLToNRACert | no |
+| `plugins_datacert.cmxa`: `Utils`, `Basics`, `Sqlcontext`, `Coq_sql_algebra`, `Sql_ast`, `Sql_parser`, `Sql_lexer`, `ToCoq` | hand-written OCaml in SQLToNRACert, no Coq API | no |
+| `plugins_datacert.cmxa`: `Utils_coq`, `Basics_coq`, `Sqlparser_coq`, `G_sql_parser` | hand-written Coq plugin in SQLToNRACert (only these need Coq's OCaml API) | no |
 | `src/extraction/sql_compiler.ml`, `src/extraction/dbcert.ml` | hand-written (dbcert) | no |
 | `src/runtime/queryExec.js`, `src/dbcertRun.js` | hand-written (dbcert) | no |
 | `qcert/runtimes/javascript/qcert-runtime-*.js` | hand-written (qcert) | no |

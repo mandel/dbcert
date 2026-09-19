@@ -5,147 +5,274 @@ one explicitly. Each phase ends with a proof-obligation audit (D-A entries).
 
 ## Phase 0 — Baseline
 
-### D1. The session environment cannot reach the two framagit repositories
+### D1. Network policy, and how the sources were obtained
 
-Observed on 2026-09-18 from the remote session (proxy egress policy):
+Observed on 2026-09-18 and re-checked on 2026-09-19 from the remote session:
 
-| Host | Needed for | Reachable |
+| Host / method | Needed for | Reachable |
 |---|---|---|
-| `github.com` (git clone, `releases/download/*`) | dbcert, qcert, jsast, opam repos | yes |
+| `git clone` from `github.com` | all repositories | yes |
+| `github.com/.../releases/download/...` | Coq 8.11.2, dune | yes |
 | `raw.githubusercontent.com` | opam metadata | yes |
-| `github.com/*/archive/*.tar.gz`, `codeload.github.com` | most opam source tarballs (incl. OCaml 4.09.1) | **no** (403) |
-| `framagit.org` | `coq-sqlformalsemantics`, `coq-sqltonracert` (pin-depends in `coq-dbcert.opam`) | **no** (403) |
-| `opam.ocaml.org` (repo + source cache) | opam default repository and tarball fallback | **no** |
-| `coq.inria.fr/opam/released` | Coq opam repository (git mirror on GitHub is reachable) | **no** |
-| `download.camlcity.org` (ocamlfind), `gitlab.inria.fr` (menhir), `erratique.ch` (cmdliner, topkg...) | OCaml deps | **no** |
-| `archive.ubuntu.com` | apt (opam 2.1.5, m4, gmp, bubblewrap installed) | yes |
+| `github.com/.../archive/*.tar.gz`, `codeload.github.com` | most opam source tarballs | **no** (403) |
+| `framagit.org` | SQLFormalSemantics, SQLToNRACert | **no** |
+| `opam.ocaml.org`, `coq.inria.fr/opam/released` | opam repositories and source cache | **no** |
+| `download.camlcity.org`, `gitlab.inria.fr`, `erratique.ch` | ocamlfind, menhir, misc OCaml deps | **no** |
+| `archive.ubuntu.com` | apt | yes |
 | `registry.npmjs.org` | Node deps | yes |
-| `zenodo.org`, `archive.softwareheritage.org`, `web.archive.org` | fallbacks for the artifact | **no** |
+| Docker daemon | `src/dbcert.docker` route | **no** (client present, no daemon) |
 
-No GitHub or gitlab.com mirror of `formaldata/sqlformalsemantics` or
-`formaldata/sqltonracert` was found (probed a dozen candidate owners), and
-neither is packaged in `coq/opam`. The OOPSLA artifact tarball
-(`dbcert-0.1.0.tar.gz`, which bundles `datacert/` and `jsql/`) is not
-attached to a GitHub release of `dbcert/dbcert` either.
+Resolution: the user published GitHub mirrors of the two FormalData
+repositories, `mandel/sqlformalsemantics` and `mandel/sqltonracert`, which
+this session reads instead of framagit. Branch `with-floats` @ ed00030 and
+branch `main` @ 7d64ca2 respectively, matching the `pin-depends` in
+`coq-dbcert.opam`.
 
-Consequence: Phase 0 step 2 (reproduce the build, generate golden files)
-cannot be completed in this environment. Decision: stop and report rather
-than spend more than the agreed hour fighting the network policy. Remedies,
-in order of preference:
-
-1. Allow `framagit.org`, `opam.ocaml.org`, `coq.inria.fr`,
-   `codeload.github.com`, `download.camlcity.org`, `gitlab.inria.fr`,
-   `erratique.ch` in the environment's network policy (or use the
-   unrestricted policy). See
-   https://code.claude.com/docs/en/claude-code-on-the-web for how policies
-   are configured per environment.
-2. Or push read-only mirrors of the two framagit repositories (branches
-   `with-floats` and `main`) to GitHub; `git clone` of any public GitHub
-   repository works here.
-3. Or attach the OOPSLA artifact tarball to the session.
+opam itself remains unusable here, because package *sources* live on the
+blocked hosts. The baseline is therefore built from source without opam
+(D5). This is a property of this environment only; the README's opam
+instructions are untouched and remain the supported route.
 
 ### D2. Number representation in the extracted compiler
 
-Confirmed from `src/extraction/SQLJSExtraction.v` and
-`qcert/compiler/core/Extraction/ExtrOcamlFloatNatIntZInt.v`:
+From `src/extraction/SQLJSExtraction.v` and
+`qcert/compiler/core/Extraction/ExtrOcamlFloatNatIntZInt.v`, and confirmed
+by reading the generated `src/extraction/sql_query_to_js.mli` after a real
+build:
 
 * `nat` → OCaml `int` (`ExtrOcamlNatInt`), `Z` → OCaml `int`
   (`ExtrOcamlZInt`), Coq primitive floats → OCaml `float`, strings →
-  `char list`. Zarith is not used anywhere on the path.
-* Under js_of_ocaml, OCaml `int` is 32-bit. Integer *literals* in SQL text
-  and constant folding inside the compiler are therefore limited to 32-bit
-  in the JS build, whereas the native build has 63-bit ints, and the JS
-  runtime represents integers as `{ $nat: <JS number> }` (53-bit exact).
-  This has to be made explicit in DATA-MODEL.md (Phase 3): the byte-identical
-  output check (Phase 2) must include queries with large literals, and the
-  library should reject integer literals outside the range the compiler
-  build can represent rather than silently wrap.
-* Floats are native IEEE doubles on both sides; the `with-floats` branch of
-  SQLFS relies on `Axiom FAAC : float_add_assoc_comm` (associativity and
-  commutativity of float addition), declared in `src/theories/ToEJson.v`.
-  This axiom is false for IEEE arithmetic in general and is the one
-  documented assumption of the float support; it must be listed in the
-  trusted computing base section of the README.
+  `char list` (`ExtrOcamlString`). The generated interface has
+  `Value_Z of int option` and `Dnat of int`. **Zarith is not used
+  anywhere on the path**, and the extracted module references neither
+  `Unix` nor `Str` (0 occurrences in 80 905 lines / 5.1 MB of generated
+  OCaml).
+* Consequence for js_of_ocaml: OCaml `int` is 32-bit there, against 63-bit
+  in the native build, while the JavaScript runtime stores integers as
+  `{ $nat: <JS number> }`, i.e. exact to 53 bits. So three different
+  integer widths meet on this path. Phase 2's byte-identical check must
+  include queries with large integer literals, and the library should
+  reject literals outside the representable range rather than wrap
+  silently. This goes in DATA-MODEL.md.
+* Floats are native IEEE doubles on both sides. The float axioms are
+  discussed in D-A0.
+* Good news for Phase 2: with no Zarith, no `Unix` and no `Str` in the
+  extracted code, the js_of_ocaml build does not need Zarith stubs. The
+  remaining unknowns are the hand-written glue (`sql_compiler.ml`, the
+  SQLToNRACert front end) and `qcert_lib`, which does pull `Unix` in
+  `compiler/lib/java_service.ml`.
 
-### D3. The SQL front end is a Coq plugin
+### D3. The SQL front end is packaged as a Coq plugin, but is separable
 
 `src/Makefile` links `plugins_datacert.cmxa` together with Coq's own OCaml
-libraries (`kernel`, `vernac`, `stm`, `toplevel`, ...). The parser
-(`Sql_lexer`, `Sql_parser`), the AST (`Sql_ast`) and the typing pass
-(`ToCoq`) are unverified OCaml living in SQLToNRACert. For the library:
+libraries (`kernel`, `vernac`, `stm`, `toplevel`, ...). Reading the sources
+(D1 made them available) shows this is a packaging artefact, not a real
+dependency.
 
-* they cannot be shipped in a browser bundle as-is (Coq's OCaml libraries
-  depend on `Unix`, `Dynlink`, threads and are tens of MB);
-* the boundary of the verified path is the extracted SQLCoq AST
-  (`Sql_query_to_js.sql_query0`), so a standalone parser producing that AST
-  does not weaken any proof.
+`sqltonracert/src/plugins/plugins_datacert.mlpack` packs thirteen modules.
+Grepping every one of them for Coq's OCaml API gives:
 
-Phase 1 will therefore need either (a) an upstream change in SQLToNRACert
-that builds the parser and `ToCoq` as a plain OCaml library independent of
-Coq's libraries, or (b) a parser in dbcert that targets the extracted AST
-directly. Which one is a Phase 1 decision to be made once the plugin's
-sources are readable; (a) is preferred by the contribution rules if the
-plugin's parser is separable, since it avoids two parsers drifting apart.
+| Module | Coq API uses |
+|---|---|
+| `Utils`, `Basics`, `Sqlcontext`, `Coq_sql_algebra` | 0 |
+| `Sql_ast`, `Sql_parser`, `Sql_lexer`, `ToCoq`, `Sqlparser` | 0 |
+| `Sqlparser_coq` | 0 directly, but calls `Utils_coq` |
+| `Utils_coq` | 9 (`Coqlib.lib_ref`, `UnivGen`, term construction) |
+| `G_sql_parser` | 3 (`DECLARE PLUGIN`, `VERNAC COMMAND EXTEND`, `Stdarg`) |
 
-### D4. Options for the toolchain (decision pending user input)
+The modules dbcert consumes — `Sql_ast`, `Sql_parser`, `Sql_lexer`, `ToCoq`
+and their dependencies `Utils`, `Basics`, `Sqlcontext`, `Coq_sql_algebra` —
+form a closed subgraph that never touches Coq. `Utils_coq`, `Sqlparser_coq`
+and `G_sql_parser` exist only to serve the `Parse_sql` vernacular command,
+which is used by `plugins/sql_parser/Test.v` and by nothing dbcert does.
 
-**Option A — keep the legacy toolchain for extraction, add js_of_ocaml on the
-OCaml side first.**
+Consequence for Phase 1 and 2: the upstream change is to build the
+Coq-free subgraph as an ordinary findlib library (say `sqlcoq_frontend`)
+and keep the plugin as a thin layer on top that depends on it. That is a
+`dune`/`_CoqProject` change plus a `.mlpack` split, with no change to any
+`.v` file and no proof touched. dbcert then links the plain library, drops
+`CCMX`/`COQLIB` from `src/Makefile`, and becomes buildable with
+js_of_ocaml. This is the first upstream patch to propose (to SQLToNRACert),
+and it is small enough to be reviewed on its own.
 
-* Pins: OCaml 4.09.1 (opam package now in `ocaml/opam-repository-archive`,
-  with the glibc ≥ 2.34 `alt-signal-stack.patch`), Coq 8.11.2, coq-jsast
-  2.0.0, coq-qcert v2.1.1, SQLFS `with-floats`, SQLToNRACert `main`.
-* js_of_ocaml 6.0.x accepts OCaml 4.08–4.14.2, so a *current* js_of_ocaml
-  can be used with the legacy OCaml. Q*cert v2.1.1 already builds
-  `bin/qcertJS.js` with js_of_ocaml (`compiler/libJS/dune`), so the
-  extracted code is known to compile to JS.
-* `wasm_of_ocaml` needs OCaml ≥ 4.14, i.e. it is **not** available under
-  this option; the wasm evaluation of Phase 2 would be a paper study only.
-* No proof is touched. All library phases (1–6) only depend on the extracted
-  OCaml interface, so a later Rocq port does not change the JS API.
-* CI: `coqorg/coq:8.11.2` Docker images still exist and are the proven build
-  environment (`src/dbcert.docker`).
+Fallback if upstream prefers not to split: dbcert can carry its own
+`dune` stanza that compiles the same eight source files from the
+SQLToNRACert checkout. That duplicates build rules, not code, and was not
+chosen because it makes dbcert depend on upstream's file layout.
 
-**Option B — port everything to current Rocq first.**
+### D4. Toolchain: Option A chosen
 
-* JsAst: done upstream (v4.0.0, `rocq-jsast` ≥ 9.0), but its API moved
-  (v3.0.0 added a toplevel module and BigInt literals).
-* Q*cert: upstream stopped at Coq 8.16 (2023-07, `master`), 153 k lines of
-  Coq at v2.1.1, 0 `Admitted`. The 8.15→8.16 step touched 8 files / ~150
-  lines, so each minor step is cheap, but the 8.16→9.x jump adds the
-  stdlib split (`From Stdlib Require`, `rocq-stdlib`), `rocq makefile`,
-  locality attributes on ~650 `Instance` and ~290 `Hint Rewrite`
-  declarations, and OCaml-side updates (master pins OCaml < 4.13; the JS
-  runtime moved integers to `BigInt`, a data-model change). Estimate: 2–4
-  person-weeks, mostly proof-script maintenance (`autorewrite` and custom
-  `Ltac` are used ~170 times each).
-* SQLFormalSemantics and SQLToNRACert: not measurable here (sources
-  unreachable). Both are pinned to 8.11.2; SQLToNRACert additionally
-  contains a Coq *plugin* written against Coq 8.11's OCaml API, which is the
-  most version-fragile kind of artifact (the API changes every minor
-  release). Expect weeks, and expect to have to coordinate with the
-  FormalData maintainers for every step.
-* Sequencing: three upstream ports must all land before a single line of
-  library code can be tested end to end.
+Two options were put to the user at the end of the first Phase 0 pass:
 
-**Recommendation: Option A.** It reaches a working library with zero proof
-changes, uses a current js_of_ocaml, keeps every phase reviewable as small
-dbcert-only commits, and leaves the Rocq port as an independent, later
-upstream effort whose interface (the extracted OCaml) is what the library
-already consumes. The parser decoupling (D3) is required under both options
-and is the first upstream conversation to open.
+**Option A** — keep the legacy toolchain (OCaml 4.09.1, Coq 8.11.2,
+coq-jsast 2.0.0, coq-qcert v2.1.1, SQLFS `with-floats`, SQLToNRACert
+`main`) for extraction, and add js_of_ocaml on the OCaml side first.
+js_of_ocaml 6.0.x still accepts OCaml 4.08–4.14.2, and Q*cert v2.1.1
+already builds `bin/qcertJS.js` with js_of_ocaml
+(`compiler/libJS/dune`), so the extracted code is known to compile to
+JavaScript. No proof is touched. `wasm_of_ocaml` needs OCaml ≥ 4.14 and is
+therefore out of reach under this option; Phase 2 will evaluate it on
+paper only.
+
+**Option B** — port everything to current Rocq first. JsAst is already
+there (v4.0.0, `rocq-jsast`), Q*cert stopped at Coq 8.16 in 2023 (153 k
+lines, 0 `Admitted`; estimate 2–4 person-weeks), and SQLFormalSemantics
+(43 k lines) and SQLToNRACert (22 k lines) are both pinned to 8.11.2, the
+latter carrying a Coq plugin written against Coq 8.11's OCaml API, the
+most version-fragile kind of artefact. Three upstream ports would have to
+land before any end-to-end test.
+
+**Decision (user, 2026-09-19): Option A.**
+
+Noted for later: `mandel/sqlformalsemantics` carries a `parser+8.15`
+branch, so some newer-Coq work on SQLFS exists upstream. That is
+information for a future Option B effort, not for this one.
+
+### D5. The Phase 0 baseline is built from source, without opam
+
+opam cannot fetch package sources in this environment (D1), so the
+toolchain was built by hand into the prefix `/opt/ocaml409`, laid out like
+an opam switch (findlib `destdir` = `/opt/ocaml409/lib`, Coq at
+`/opt/ocaml409/lib/coq`) so that dbcert's `-I +../coq-qcert` and
+`-I +../coq/...` paths in `src/Makefile` resolve unchanged.
+
+| Component | Version | Source |
+|---|---|---|
+| OCaml | 4.09.1 | `git clone github.com/ocaml/ocaml` tag `4.09.1` |
+| findlib | 1.8.1 | `git clone github.com/ocaml/ocamlfind` tag `findlib-1.8.1` |
+| num | 1.4 | `git clone github.com/ocaml/num` tag `v1.4` |
+| dune | 2.9.1 | GitHub release asset |
+| menhir | 20200211 | `git clone github.com/LexiFi/menhir` tag `20200211` (mirror; `gitlab.inria.fr` is blocked) |
+| re | 1.9.0 | `git clone github.com/ocaml/ocaml-re` |
+| stringext | master @ 356bab1 | `git clone github.com/rgrinberg/stringext` |
+| base64 | v3.5.1 | `git clone github.com/mirage/ocaml-base64` |
+| calendar | 3.0.0 | `git clone github.com/ocaml-community/calendar` tag `v3.0.0` |
+| sexplib0 | v0.13.0 | `git clone github.com/janestreet/sexplib0` |
+| uri | v3.1.0 | `git clone github.com/mirage/ocaml-uri` |
+| Coq | 8.11.2 | GitHub release asset `coq-8.11.2.tar.gz` |
+
+Three deviations, all recorded because they affect reproducibility:
+
+1. **OCaml 4.09.1 needs a patch on this host.** glibc 2.39 makes
+   `SIGSTKSZ` non-constant, so `runtime/signals_nat.c` fails to compile
+   (`variably modified 'sig_alt_stack' at file scope`). Applied upstream
+   commit `8eed2e441222588dc385a98ae8bd6f5820eb0223`, "Dynamically allocate
+   the alternate signal stack", which is exactly the `alt-signal-stack.patch`
+   that the `ocaml-base-compiler.4.09.1` opam package applies for this
+   reason. Four runtime files, 72 insertions. This is the standard build,
+   not a modification of the compiler's behaviour.
+2. **uri 3.1.0 rather than whatever opam resolved in 2021.** `coq-qcert`
+   constrains `uri` without a version. uri 3.x keeps `Uri.pct_encode` and
+   `Uri.pct_decode`, the only two functions Q*cert uses
+   (`compiler/extraction/uri_component.ml`), and unlike uri 2.2.1 it does
+   not need `ppx_sexp_conv` at build time, nor `angstrom` as uri 4.x does.
+   Same for `base64` 3.5.1, chosen over 3.4.0 because 3.4.0 needs
+   `dune-configurator`, which needs `csexp`.
+3. **`stringext` built from master with its `examples/` directory
+   removed**, because that directory carries `(lang dune 3.14)` which
+   dune 2.9.1 refuses. The library itself is untouched. The last tagged
+   release in that repository, v1.4.3, predates its move to dune.
+
+None of this touches a `.v` file, a proof, or any upstream repository's
+checked-out content beyond the OCaml compiler patch above.
+
+One extra findlib package was needed that no opam file mentions: `seq`,
+the compatibility shim that `re`'s META requires even though OCaml 4.09
+has `Seq` in its standard library. Built from `github.com/c-cube/seq`.
+
+The recipe, for the record:
+
+```sh
+# OCaml 4.09.1 into an opam-shaped prefix
+git clone --depth 1 --branch 4.09.1 https://github.com/ocaml/ocaml
+cd ocaml && ./configure --prefix=/opt/ocaml409
+git fetch --depth 2 origin 8eed2e441222588dc385a98ae8bd6f5820eb0223
+git show 8eed2e44 -- runtime/fail_nat.c runtime/signals_nat.c \
+    runtime/startup_nat.c runtime/sys.c | git apply
+make -j4 world.opt && make install
+
+# findlib, with destdir laid out like an opam switch
+./configure -sitelib /opt/ocaml409/lib   # then fix etc/findlib.conf:
+#   destdir="/opt/ocaml409/lib"  path="/opt/ocaml409/lib"
+
+# then, in order: num, dune, re, seq, stringext, base64, calendar,
+# sexplib0, uri, menhir  (dune build -p <pkg> && dune install --prefix)
+
+# Coq 8.11.2 from its GitHub release asset
+./configure -prefix /opt/ocaml409 -libdir /opt/ocaml409/lib/coq \
+    -native-compiler no && make -j4 world && make install
+
+# the Coq libraries, in dependency order
+jsast@v2.0.0:  make && make install
+qcert@v2.1.1:  make configure && make -j4 coq-qcert \
+               && dune build -p coq-qcert && make install-coqdev \
+               && dune install --prefix /opt/ocaml409 coq-qcert
+sqlformalsemantics@with-floats: make -j4 && make install
+sqltonracert@main:              make -j4 && make install
+dbcert:                         make
+```
+
+### D6. What the golden files record, and why not the linked output
+
+`src/tests/run-golden.sh` compiles every query in the corpus and runs the
+ones that have a database, then either checks the result against
+`src/tests/golden/` or refreshes it with `-u`. Per query file it stores:
+
+* `<case>.out` — the compiler's stdout, with the output directory
+  stripped so the files are path-independent.
+* `<case>.js`, `<case>_1.js`, ... — the generated JavaScript **without**
+  the linked runtime. The runtime is Q*cert's, it is versioned separately,
+  and linking it would make every golden file churn whenever Q*cert's
+  runtime changes. What Phases 1 and 2 must reproduce byte for byte is the
+  compiler's own output, which is exactly this.
+* `<case>.run` — one line per query with the JSON that `dbcertRun.js`
+  prints, produced from a separate `-link` pass.
+
+Baseline results on the pinned toolchain (D5):
+
+| Corpus | Queries | Compiled | Notes |
+|---|---|---|---|
+| `tests/simple/org1..5.sql` | 5 | 5 | results match the README example |
+| `tests/null/queries_null.sql` | 4 | 4 | all four match the "Got" lines recorded in the file |
+| `tests/nested/queries_nested.sql` | 11 | 11 | all eleven match the "Got" lines recorded in the file |
+| `tests/unit.sql` | 58 | 54 | the 4 failures are exactly the ones the file documents as unsupported |
+
+The four `unit.sql` failures are three `Not_translatable_sqlalg` (GROUP BY
+on an expression that is not an attribute) and one
+`Not_well_formed_sqlalg` (`IN` with the same alias on both sides). They are
+expected, and the golden files pin that behaviour so a regression would
+show up.
+
+`src/tests/.gitignore` ignored `*.js`, which would have excluded the
+generated golden JavaScript, so it gained a `!golden/*.js` exception.
 
 ### D-A0. Proof-obligation audit at the end of Phase 0
 
-Counted with `grep -rn "Admitted\|^\s*admit\." --include=*.v`:
+Counted with `grep -rn` over every `.v` file in each repository.
 
-| Repository | `Admitted` / `admit` | Axioms / Parameters noted |
-|---|---|---|
-| dbcert `src/theories`, `src/extraction` | 0 / 0 | 1 `Axiom FAAC` (float add assoc/comm) |
-| Q*cert v2.1.1 `compiler/core` | 0 / 0 | extraction hooks only: `NativeString` (6 Parameters), `Float` (~10 Parameters realised by OCaml floats), `LoggerComponent` (optimizer-logger Axioms) |
-| Q*cert master | 0 / 0 | same |
-| JsAst v2.0.0 / v4.0.0 | not counted (no proofs, definitions only) | — |
-| SQLFormalSemantics `with-floats` | **not measurable** (D1) | `AxiomFloat` (per dbcert comment) |
-| SQLToNRACert `main` | **not measurable** (D1) | — |
+| Repository | `Admitted` | `admit.` | Axioms |
+|---|---|---|---|
+| dbcert `src/theories`, `src/extraction` | 0 | 0 | 1: `FAAC` in `src/theories/ToEJson.v` |
+| SQLFormalSemantics `with-floats` (42 files, 43 469 lines) | 0 | 0 | 0 |
+| SQLToNRACert `main` (25 files, 22 317 lines) | 0 | 0 | 3, all in `src/jsql/aux/AxiomFloat.v` |
+| Q*cert v2.1.1 `compiler/core` (449 files, 153 205 lines) | 0 | 0 | optimizer-logger axioms in `Compiler/Component/LoggerComponent.v`, realised at extraction |
+| Q*cert `master` | 0 | 0 | same |
+| JsAst v2.0.0 | — | — | definitions only, no proofs |
 
-No proof was modified in Phase 0.
+The float axioms deserve to be named precisely, because they are the
+substantive assumption in the trusted computing base:
+
+* `float_max_assoc`, `float_max_comm`, `float_of_int_pos`
+  (`AxiomFloat.v`). The authors state these are **true** but unprovable in
+  Coq because `float_max` and `float_of_int` are only realised at
+  extraction.
+* Record `float_add_assoc_comm` (`AxiomFloat.v`), assuming float addition
+  is associative and commutative. The authors state plainly that this is
+  **false** for IEEE arithmetic. dbcert instantiates it as
+  `Axiom FAAC` in `src/theories/ToEJson.v`. Its use is confined to the
+  correctness of the `sum` and `avg` aggregates on floats; the compiler's
+  own correctness and every other aggregate, function and predicate do not
+  depend on it.
+
+This is what the README's trusted-computing-base section must say
+(Phase 6). No proof was modified in Phase 0.

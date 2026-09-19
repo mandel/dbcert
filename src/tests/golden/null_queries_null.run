@@ -1,0 +1,4 @@
+null_queries_null.js: []
+null_queries_null_1.js: [{"A":null},{"A":{"$nat":1}}]
+null_queries_null_2.js: [{"A":{"$nat":1}}]
+null_queries_null_3.js: [{"c":{"$nat":2},"A":null},{"c":{"$nat":1},"A":{"$nat":1}}]

@@ -1,0 +1,17 @@
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.A AS _c0_A FROM (TABLE R) _c0(A) WHERE NOT (_c0.A IN (SELECT _c1.A AS _c1_A FROM (TABLE S) _c1(A) WHERE TRUE))
+
+Corresponding JS query generated in: null_queries_null.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.A AS _c0_A FROM (TABLE R) _c0(A) WHERE NOT (EXISTS (SELECT * FROM (TABLE S) _c1(A) WHERE (_c1.A) = (_c0.A)))
+
+Corresponding JS query generated in: null_queries_null_1.js
+------------------------------------------------------------------------
+SQLCoq query: (SELECT _c0.A AS _c0_A FROM (TABLE R) _c0(A) WHERE TRUE) EXCEPT (SELECT _c2._c1_A AS _c0_A FROM (SELECT _c1.A AS _c1_A FROM (TABLE S) _c1(A) WHERE TRUE) _c2(_c1_A) WHERE TRUE)
+
+Corresponding JS query generated in: null_queries_null_2.js
+------------------------------------------------------------------------
+SQLCoq query: SELECT _c0.A AS _c0_A, count(_c0.A) AS c FROM (TABLE T) _c0(A) WHERE TRUE GROUP BY _c0.A
+
+Corresponding JS query generated in: null_queries_null_3.js
+Compilation to JavaScript finished

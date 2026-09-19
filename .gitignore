@@ -1,4 +1,6 @@
 *.vo
+*.vos
+*.vok
 *.glob
 *.aux
 *.cmi
@@ -13,8 +15,8 @@
 *~
 .lia.cache
 clean
-extraction/sql_query_to_js.ml
-extraction/sql_query_to_js.mli
+sql_query_to_js.ml
+sql_query_to_js.mli
 dbcert
 dbcert.byte
 _CoqProject
@@ -22,6 +24,9 @@ qcert
 dbcert-*
 
 _build/
+.depend.extr
+Makefile.coq
+Makefile.coq.conf
 eval_sql_query.ml
 eval_sql_query.mli
 
