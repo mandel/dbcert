@@ -43,30 +43,46 @@
 | `.v` files touched | 0 |
 | `Admitted` / `admit.` introduced | 0 / 0 |
 
-## Phase 2 — js_of_ocaml build: next
+## Phase 2 — deferred: port to current Rocq first
 
-The blocker is known and was found in Phase 0: `src/Makefile` still links
-Coq's OCaml libraries because the SQL front end is packed into the
-SQLToNRACert Coq plugin, even though the eight modules dbcert uses touch
-no Coq API (DECISIONS D3). Splitting `plugins_datacert.mlpack` into a
-plain findlib library plus a thin plugin is the first upstream patch to
-propose, and it edits no `.v` file.
+The user reversed the toolchain decision on 2026-09-21 (DECISIONS D10).
+The js_of_ocaml work waits until the chain builds on current Rocq.
 
-Two things Phase 1 established that make Phase 2 easier than feared: the
-extracted module references neither `Unix` nor `Str` and does not use
-Zarith, so no Zarith stubs are needed; and the library API is already
-string in, string out, so `Js.export` is a few lines.
+## Port to Rocq 9.0 — in progress
 
-One thing Phase 2 must re-run: the integer-literal test. Under
-js_of_ocaml OCaml's `int` is 2^30-1 rather than 2^62-1, so the accepted
-literal range shrinks and the byte-identical check has to be read with
-that in mind.
+| Step | Status | Notes |
+|---|---|---|
+| Modern toolchain | **done** | OCaml 4.14.1, dune 3.14, findlib 1.9.6, zarith 1.13, menhir 20231231, js_of_ocaml 5.6.0, all from Ubuntu packages (DECISIONS D11). |
+| Rocq 9.0.0 | **done** | Built from the GitHub release tarball into `/opt/rocq90`, with the separately packaged standard library from `rocq-prover/stdlib` at V9.0.0. |
+| JsAst | **done** | v4.0.0 already targets Rocq 9 upstream. Builds and installs unchanged, which validates the toolchain. |
+| Q*cert | **313 of 449 files** | Patch and rationale in `upstream/`. Five files still fail and block the remaining 136 (DECISIONS D13). |
+| SQLFormalSemantics | not started | `parser+8.15` is a Coq 8.15.2 port but has no floats; `with-floats` is at 8.11.2. The two have to be reconciled (DECISIONS D10). |
+| SQLToNRACert | not started | Still 8.11.2, and carries a Coq plugin written against Coq 8.11's OCaml API, the most version-fragile piece in the chain. |
+| dbcert | not started | Two `.v` files. |
 
-## Phases 3–6: not started
+### Measured so far
+
+| Measurement | Value |
+|---|---|
+| Q*cert files compiling under Rocq 9.0 | 313 / 449 |
+| Files changed by the port patch | 48, with 38 insertions and 76 deletions |
+| Theorem statements changed | 0 |
+| `Admitted` / `admit.` introduced | 0 / 0 |
+| Proof scripts touched | 2 lemmas, both in `Utils/StringAdd.v`, both still `Qed` |
+| Remaining error sites in Q*cert | 5 |
 
 ## Open items
 
-* None blocking. The environment cannot run opam (DECISIONS D1), so Phase 5's
-  GitHub Actions work will have to be written against opam without being
-  exercised end to end here; the from-source recipe in DECISIONS D5 is the
-  fallback that is known to work.
+* **Waiting on the user:** the proof-script policy in DECISIONS D13. A
+  version port necessarily edits tactic scripts. Nothing has been
+  weakened or admitted and no statement has changed, but the standing
+  rule says to stop and report when proofs need touching, so this is the
+  report.
+* **Waiting on the user:** whether the float support has to survive the
+  port. The only newer-Coq work upstream in SQLFormalSemantics is on the
+  no-floats line (DECISIONS D10), so keeping floats means porting the
+  `with-floats` branch from 8.11 ourselves or re-applying the float delta
+  afterwards.
+* The environment cannot run opam (DECISIONS D1), so Phase 5's GitHub
+  Actions work will have to be written against opam without being
+  exercised end to end here.

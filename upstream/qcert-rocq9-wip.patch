@@ -1,0 +1,674 @@
+diff --git a/compiler/core/Data/DataSystem.v b/compiler/core/Data/DataSystem.v
+index c0fc0f4c..ced0dc9c 100644
+--- a/compiler/core/Data/DataSystem.v
++++ b/compiler/core/Data/DataSystem.v
+@@ -17,9 +17,9 @@ Require Export DataTypes.
+ 
+ Class basic_model : Type
+   := mk_basic_model {
+-         basic_model_runtime :> foreign_runtime
+-         ; basic_model_foreign_type :> foreign_type
+-         ; basic_model_brand_model :> brand_model
+-         ; basic_model_foreign_typing :> foreign_typing
++         basic_model_runtime :: foreign_runtime
++         ; basic_model_foreign_type :: foreign_type
++         ; basic_model_brand_model :: brand_model
++         ; basic_model_foreign_typing :: foreign_typing
+        }.
+ 
+diff --git a/compiler/core/Data/ForeignRuntime.v b/compiler/core/Data/ForeignRuntime.v
+index 74eba5c9..e17be136 100644
+--- a/compiler/core/Data/ForeignRuntime.v
++++ b/compiler/core/Data/ForeignRuntime.v
+@@ -17,7 +17,7 @@ Require Export ForeignOperators.
+ 
+ Class foreign_runtime : Type
+   := mk_foreign_runtime {
+-         foreign_runtime_data :> foreign_data
+-         ; foreign_runtime_operators :> foreign_operators
++         foreign_runtime_data :: foreign_data
++         ; foreign_runtime_operators :: foreign_operators
+        }.
+ 
+diff --git a/compiler/core/Data/ForeignTyping.v b/compiler/core/Data/ForeignTyping.v
+index 9b6db32d..ea61f22a 100644
+--- a/compiler/core/Data/ForeignTyping.v
++++ b/compiler/core/Data/ForeignTyping.v
+@@ -23,7 +23,7 @@ Class foreign_typing
+       {model:brand_model}
+   : Type
+   := mk_foreign_typing {
+-          foreign_typing_data :> foreign_data_typing
+-         ; foreign_typing_operators :> foreign_operators_typing
++          foreign_typing_data :: foreign_data_typing
++         ; foreign_typing_operators :: foreign_operators_typing
+        }.
+ 
+diff --git a/compiler/core/Data/Model/ForeignData.v b/compiler/core/Data/Model/ForeignData.v
+index 47f21a7f..5c594a24 100644
+--- a/compiler/core/Data/Model/ForeignData.v
++++ b/compiler/core/Data/Model/ForeignData.v
+@@ -22,14 +22,14 @@ Section ForeignData.
+            foreign_data_model : Set
+ (* TODO: #35 is needed before we can generalize this
+   ; foreign_data_equiv (a b : foreign_data_model) : Prop
+-  ; foreign_data_equiv_equiv :> Equivalence foreign_data_equiv
++  ; foreign_data_equiv_equiv :: Equivalence foreign_data_equiv
+  *) 
+-           ; foreign_data_dec :> EqDec foreign_data_model eq
++           ; foreign_data_dec :: EqDec foreign_data_model eq
+            ; foreign_data_normalized (a : foreign_data_model) : Prop
+            ; foreign_data_normalize (a : foreign_data_model) : foreign_data_model
+            ; foreign_data_normalize_normalizes (a : foreign_data_model) : foreign_data_normalized (foreign_data_normalize a)
+            ; foreign_data_normalize_idempotent (a : foreign_data_model) : foreign_data_normalized a -> foreign_data_normalize a = a
+-           ; foreign_data_tostring :> ToString foreign_data_model
++           ; foreign_data_tostring :: ToString foreign_data_model
+       }.
+ 
+ End ForeignData.
+diff --git a/compiler/core/Data/Operators/ForeignOperators.v b/compiler/core/Data/Operators/ForeignOperators.v
+index 64c5818d..6ccec201 100644
+--- a/compiler/core/Data/Operators/ForeignOperators.v
++++ b/compiler/core/Data/Operators/ForeignOperators.v
+@@ -26,8 +26,8 @@ Section ForeignOperators.
+     := mk_foreign_operators {
+            (* Unary operators *)
+            foreign_operators_unary : Set
+-           ; foreign_operators_unary_dec :> EqDec foreign_operators_unary eq
+-           ; foreign_operators_unary_tostring :> ToString foreign_operators_unary
++           ; foreign_operators_unary_dec :: EqDec foreign_operators_unary eq
++           ; foreign_operators_unary_tostring :: ToString foreign_operators_unary
+            ; foreign_operators_unary_interp
+                (br:brand_relation_t)
+                (op:foreign_operators_unary)
+@@ -40,8 +40,8 @@ Section ForeignOperators.
+                data_normalized br o
+            (* Binary operators *)
+            ; foreign_operators_binary : Set
+-           ; foreign_operators_binary_dec :> EqDec foreign_operators_binary eq
+-           ; foreign_operators_binary_tostring :> ToString foreign_operators_binary
++           ; foreign_operators_binary_dec :: EqDec foreign_operators_binary eq
++           ; foreign_operators_binary_tostring :: ToString foreign_operators_binary
+            ; foreign_operators_binary_interp
+                (br:brand_relation_t)
+                (op:foreign_operators_binary)
+diff --git a/compiler/core/EJson/Model/ForeignEJson.v b/compiler/core/EJson/Model/ForeignEJson.v
+index 2dfd7a7a..1386ad9f 100644
+--- a/compiler/core/EJson/Model/ForeignEJson.v
++++ b/compiler/core/EJson/Model/ForeignEJson.v
+@@ -20,12 +20,12 @@ Section ForeignEJson.
+   
+   Class foreign_ejson (foreign_ejson_model : Set) : Type
+     := mk_foreign_ejson {
+-           foreign_ejson_dec :> EqDec foreign_ejson_model eq
++           foreign_ejson_dec :: EqDec foreign_ejson_model eq
+            ; foreign_ejson_normalized (a : foreign_ejson_model) : Prop
+            ; foreign_ejson_normalize (a : foreign_ejson_model) : foreign_ejson_model
+            ; foreign_ejson_normalize_normalizes (a : foreign_ejson_model) : foreign_ejson_normalized (foreign_ejson_normalize a)
+            ; foreign_ejson_normalize_idempotent (a : foreign_ejson_model) : foreign_ejson_normalized a -> foreign_ejson_normalize a = a
+-           ; foreign_ejson_tostring :> ToString foreign_ejson_model
++           ; foreign_ejson_tostring :: ToString foreign_ejson_model
+       }.
+ 
+ End ForeignEJson.
+diff --git a/compiler/core/EJson/Operators/ForeignEJsonRuntime.v b/compiler/core/EJson/Operators/ForeignEJsonRuntime.v
+index 0210bf24..a83ffc63 100644
+--- a/compiler/core/EJson/Operators/ForeignEJsonRuntime.v
++++ b/compiler/core/EJson/Operators/ForeignEJsonRuntime.v
+@@ -26,8 +26,8 @@ Section ForeignEJsonRuntime.
+         {fejson:foreign_ejson foreign_ejson_model}
+   : Type
+     := mk_foreign_ejson_runtime {
+-           foreign_ejson_runtime_op_dec :> EqDec foreign_ejson_runtime_op eq
+-           ; foreign_ejson_runtime_op_tostring :> ToString foreign_ejson_runtime_op
++           foreign_ejson_runtime_op_dec :: EqDec foreign_ejson_runtime_op eq
++           ; foreign_ejson_runtime_op_tostring :: ToString foreign_ejson_runtime_op
+            ; foreign_ejson_runtime_op_interp 
+                (f:foreign_ejson_runtime_op)
+                (dl:list (@ejson foreign_ejson_model)) : option (@ejson foreign_ejson_model)
+diff --git a/compiler/core/Imp/Lang/Imp.v b/compiler/core/Imp/Lang/Imp.v
+index fd120929..91fec477 100644
+--- a/compiler/core/Imp/Lang/Imp.v
++++ b/compiler/core/Imp/Lang/Imp.v
+@@ -21,7 +21,6 @@ Require Import ZArith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/Imp/Lang/ImpDataEval.v b/compiler/core/Imp/Lang/ImpDataEval.v
+index 0c157d8a..91434bc6 100644
+--- a/compiler/core/Imp/Lang/ImpDataEval.v
++++ b/compiler/core/Imp/Lang/ImpDataEval.v
+@@ -19,7 +19,6 @@ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+ Require Import ZArith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/Imp/Lang/ImpEJsonEval.v b/compiler/core/Imp/Lang/ImpEJsonEval.v
+index 29cf6de5..33a20ff1 100644
+--- a/compiler/core/Imp/Lang/ImpEJsonEval.v
++++ b/compiler/core/Imp/Lang/ImpEJsonEval.v
+@@ -19,7 +19,6 @@ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+ Require Import ZArith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/Imp/Lang/ImpVars.v b/compiler/core/Imp/Lang/ImpVars.v
+index 165cae1b..fe685b35 100644
+--- a/compiler/core/Imp/Lang/ImpVars.v
++++ b/compiler/core/Imp/Lang/ImpVars.v
+@@ -19,7 +19,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRC/Lang/NNRC.v b/compiler/core/NNRC/Lang/NNRC.v
+index 3b8520f7..78db3327 100644
+--- a/compiler/core/NNRC/Lang/NNRC.v
++++ b/compiler/core/NNRC/Lang/NNRC.v
+@@ -38,7 +38,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRC/Lang/NNRCSugar.v b/compiler/core/NNRC/Lang/NNRCSugar.v
+index a69e5742..3f3b8e97 100644
+--- a/compiler/core/NNRC/Lang/NNRCSugar.v
++++ b/compiler/core/NNRC/Lang/NNRCSugar.v
+@@ -20,7 +20,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRCMR/Lang/ForeignReduceOps.v b/compiler/core/NNRCMR/Lang/ForeignReduceOps.v
+index 5a3ba607..2047ff16 100644
+--- a/compiler/core/NNRCMR/Lang/ForeignReduceOps.v
++++ b/compiler/core/NNRCMR/Lang/ForeignReduceOps.v
+@@ -22,8 +22,8 @@ Section ForeignReduceOps.
+   : Type
+     := mk_foreign_reduce_op {
+            foreign_reduce_op_type : Set
+-           ; foreign_reduce_op_dec :> EqDec foreign_reduce_op_type eq
+-           ; foreign_reduce_op_tostring :> ToString foreign_reduce_op_type
++           ; foreign_reduce_op_dec :: EqDec foreign_reduce_op_type eq
++           ; foreign_reduce_op_tostring :: ToString foreign_reduce_op_type
+            ; foreign_reduce_op_interp 
+                (br:brand_relation_t)
+                (op:foreign_reduce_op_type)
+diff --git a/compiler/core/NNRS/Lang/NNRS.v b/compiler/core/NNRS/Lang/NNRS.v
+index 33cfdc91..275fa7ec 100644
+--- a/compiler/core/NNRS/Lang/NNRS.v
++++ b/compiler/core/NNRS/Lang/NNRS.v
+@@ -23,7 +23,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRS/Lang/NNRSCrossShadow.v b/compiler/core/NNRS/Lang/NNRSCrossShadow.v
+index d7aa8110..98091162 100644
+--- a/compiler/core/NNRS/Lang/NNRSCrossShadow.v
++++ b/compiler/core/NNRS/Lang/NNRSCrossShadow.v
+@@ -27,7 +27,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRS/Lang/NNRSEval.v b/compiler/core/NNRS/Lang/NNRSEval.v
+index 22426879..c3abfd88 100644
+--- a/compiler/core/NNRS/Lang/NNRSEval.v
++++ b/compiler/core/NNRS/Lang/NNRSEval.v
+@@ -23,7 +23,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRS/Lang/NNRSRename.v b/compiler/core/NNRS/Lang/NNRSRename.v
+index 8f500788..3d6ab02f 100644
+--- a/compiler/core/NNRS/Lang/NNRSRename.v
++++ b/compiler/core/NNRS/Lang/NNRSRename.v
+@@ -18,7 +18,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRS/Lang/NNRSSem.v b/compiler/core/NNRS/Lang/NNRSSem.v
+index 72a2d007..9892ac1c 100644
+--- a/compiler/core/NNRS/Lang/NNRSSem.v
++++ b/compiler/core/NNRS/Lang/NNRSSem.v
+@@ -23,7 +23,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRS/Lang/NNRSSemEval.v b/compiler/core/NNRS/Lang/NNRSSemEval.v
+index d9634343..4dcb5b07 100644
+--- a/compiler/core/NNRS/Lang/NNRSSemEval.v
++++ b/compiler/core/NNRS/Lang/NNRSSemEval.v
+@@ -23,7 +23,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRS/Lang/NNRSVars.v b/compiler/core/NNRS/Lang/NNRSVars.v
+index da582b92..910c95bb 100644
+--- a/compiler/core/NNRS/Lang/NNRSVars.v
++++ b/compiler/core/NNRS/Lang/NNRSVars.v
+@@ -18,7 +18,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRS/Typing/TNNRSCrossShadow.v b/compiler/core/NNRS/Typing/TNNRSCrossShadow.v
+index 1a7c82d9..9113b50c 100644
+--- a/compiler/core/NNRS/Typing/TNNRSCrossShadow.v
++++ b/compiler/core/NNRS/Typing/TNNRSCrossShadow.v
+@@ -21,7 +21,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRS/Typing/TNNRSRename.v b/compiler/core/NNRS/Typing/TNNRSRename.v
+index 3ba636a1..a3363bef 100644
+--- a/compiler/core/NNRS/Typing/TNNRSRename.v
++++ b/compiler/core/NNRS/Typing/TNNRSRename.v
+@@ -17,7 +17,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRSimp/Lang/NNRSimp.v b/compiler/core/NNRSimp/Lang/NNRSimp.v
+index f1e0af56..67f804e4 100644
+--- a/compiler/core/NNRSimp/Lang/NNRSimp.v
++++ b/compiler/core/NNRSimp/Lang/NNRSimp.v
+@@ -23,7 +23,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRSimp/Lang/NNRSimpEval.v b/compiler/core/NNRSimp/Lang/NNRSimpEval.v
+index c85a8853..456e27f1 100644
+--- a/compiler/core/NNRSimp/Lang/NNRSimpEval.v
++++ b/compiler/core/NNRSimp/Lang/NNRSimpEval.v
+@@ -23,7 +23,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRSimp/Lang/NNRSimpRename.v b/compiler/core/NNRSimp/Lang/NNRSimpRename.v
+index 94ae8285..0355fa4c 100644
+--- a/compiler/core/NNRSimp/Lang/NNRSimpRename.v
++++ b/compiler/core/NNRSimp/Lang/NNRSimpRename.v
+@@ -18,7 +18,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRSimp/Lang/NNRSimpSem.v b/compiler/core/NNRSimp/Lang/NNRSimpSem.v
+index 875ffb2b..3b3bb104 100644
+--- a/compiler/core/NNRSimp/Lang/NNRSimpSem.v
++++ b/compiler/core/NNRSimp/Lang/NNRSimpSem.v
+@@ -23,7 +23,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRSimp/Lang/NNRSimpSemEval.v b/compiler/core/NNRSimp/Lang/NNRSimpSemEval.v
+index e867b6af..07f37e14 100644
+--- a/compiler/core/NNRSimp/Lang/NNRSimpSemEval.v
++++ b/compiler/core/NNRSimp/Lang/NNRSimpSemEval.v
+@@ -23,7 +23,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRSimp/Lang/NNRSimpVars.v b/compiler/core/NNRSimp/Lang/NNRSimpVars.v
+index cd831368..3efbb9c1 100644
+--- a/compiler/core/NNRSimp/Lang/NNRSimpVars.v
++++ b/compiler/core/NNRSimp/Lang/NNRSimpVars.v
+@@ -19,7 +19,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NNRSimp/Typing/TNNRSimpRename.v b/compiler/core/NNRSimp/Typing/TNNRSimpRename.v
+index 340111b5..a78d8889 100644
+--- a/compiler/core/NNRSimp/Typing/TNNRSimpRename.v
++++ b/compiler/core/NNRSimp/Typing/TNNRSimpRename.v
+@@ -18,7 +18,6 @@ Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Bool.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+diff --git a/compiler/core/NRA/Context/NRAContext.v b/compiler/core/NRA/Context/NRAContext.v
+index fd5b15a5..44c4cbea 100644
+--- a/compiler/core/NRA/Context/NRAContext.v
++++ b/compiler/core/NRA/Context/NRAContext.v
+@@ -24,7 +24,6 @@ Require Import Program.
+ Require Import List.
+ Require Import Permutation.
+ Require Import String.
+-Require Import NPeano.
+ Require Import Arith.
+ Require Import Bool.
+ Require Import Utils.
+diff --git a/compiler/core/NRA/Optim/NRARewriteContext.v b/compiler/core/NRA/Optim/NRARewriteContext.v
+index 2802be2b..dfb5ab40 100644
+--- a/compiler/core/NRA/Optim/NRARewriteContext.v
++++ b/compiler/core/NRA/Optim/NRARewriteContext.v
+@@ -22,7 +22,6 @@ Require Import Setoid.
+ Require Import EquivDec.
+ Require Import Program.
+ Require Import Arith.
+-Require Import NPeano.
+ Require Import Lia.
+ Require Import List.
+ Require Import Utils.
+diff --git a/compiler/core/Translation/Model/ForeignDataToEJson.v b/compiler/core/Translation/Model/ForeignDataToEJson.v
+index 856190f7..6923f2da 100644
+--- a/compiler/core/Translation/Model/ForeignDataToEJson.v
++++ b/compiler/core/Translation/Model/ForeignDataToEJson.v
+@@ -30,7 +30,7 @@ Class foreign_to_ejson
+       {fruntime:foreign_runtime}
+   : Type
+   := mk_foreign_to_ejson {
+-         foreign_to_ejson_runtime :> foreign_ejson_runtime foreign_ejson_runtime_op
++         foreign_to_ejson_runtime :: foreign_ejson_runtime foreign_ejson_runtime_op
+          ; foreign_to_ejson_to_data
+              (j:foreign_ejson_model) : foreign_data_model
+          ; foreign_to_ejson_from_data
+diff --git a/compiler/core/TypeSystem/ForeignType.v b/compiler/core/TypeSystem/ForeignType.v
+index 42647bdc..9fa06ca3 100644
+--- a/compiler/core/TypeSystem/ForeignType.v
++++ b/compiler/core/TypeSystem/ForeignType.v
+@@ -22,16 +22,16 @@ Section ForeignType.
+            foreign_type_type : Set
+ (* TODO: #35 is needed before we can generalize this
+   ; foreign_type_equiv (a b : foreign_type_type) : Prop
+-  ; foreign_type_equiv_equiv :> Equivalence foreign_type_equiv
++  ; foreign_type_equiv_equiv :: Equivalence foreign_type_equiv
+  *) 
+-           ; foreign_type_dec :> EqDec foreign_type_type eq
+-           ; foreign_type_lattice :> Lattice foreign_type_type eq
++           ; foreign_type_dec :: EqDec foreign_type_type eq
++           ; foreign_type_lattice :: Lattice foreign_type_type eq
+            ; foreign_type_sub (a b : foreign_type_type) : Prop
+            ; foreign_type_sub_dec (a b : foreign_type_type) :
+                { foreign_type_sub a b} + {~ foreign_type_sub a b}
+-           ; foreign_type_sub_pre :> PreOrder foreign_type_sub
+-           ; foreign_type_sub_part :> PartialOrder eq foreign_type_sub
+-           ; foreign_type_olattice :> OLattice eq foreign_type_sub
++           ; foreign_type_sub_pre :: PreOrder foreign_type_sub
++           ; foreign_type_sub_part :: PartialOrder eq foreign_type_sub
++           ; foreign_type_olattice :: OLattice eq foreign_type_sub
+       }.
+   
+ End ForeignType.
+diff --git a/compiler/core/TypeSystem/TBrandModel.v b/compiler/core/TypeSystem/TBrandModel.v
+index def4ec1c..e45d3596 100644
+--- a/compiler/core/TypeSystem/TBrandModel.v
++++ b/compiler/core/TypeSystem/TBrandModel.v
+@@ -124,8 +124,8 @@ Section TBrandModel.
+   Class brand_model :=
+     mkBrand_model {
+         (* note that brand_context_brand_model can have duplicates in the domain *)
+-        brand_model_relation :> brand_relation;
+-        brand_model_context :> brand_context;
++        brand_model_relation :: brand_relation;
++        brand_model_context :: brand_context;
+         brand_model_domain_b :
+          holds (brand_model_domain_dec);
+             
+diff --git a/compiler/core/Updates/UPropag.v b/compiler/core/Updates/UPropag.v
+index 6af99c87..f63c5d1b 100644
+--- a/compiler/core/Updates/UPropag.v
++++ b/compiler/core/Updates/UPropag.v
+@@ -397,7 +397,7 @@ Section UPropag.
+       revert H.
+       generalize (mult s a) as ns.
+       intros.
+-      rewrite Max.max_idempotent.
++      rewrite Nat.max_idempotent.
+       lia.
+   Qed.
+ 
+diff --git a/compiler/core/Utils/Bag.v b/compiler/core/Utils/Bag.v
+index 65476395..122478f6 100644
+--- a/compiler/core/Utils/Bag.v
++++ b/compiler/core/Utils/Bag.v
+@@ -15,8 +15,6 @@
+ (** This module provides support for bags (or multisets). *)
+ 
+ Require Import Arith.
+-Require Import Min.
+-Require Import Max.
+ Require Import ZArith.
+ Require Import Lia.
+ Require Import Permutation.
+diff --git a/compiler/core/Utils/Bindings.v b/compiler/core/Utils/Bindings.v
+index 0ad2b75a..7232a4f5 100644
+--- a/compiler/core/Utils/Bindings.v
++++ b/compiler/core/Utils/Bindings.v
+@@ -40,9 +40,9 @@ Require Import StringAdd.
+ Section Bindings.
+ 
+   Class ODT {K:Type}
+-    := mkODT { ODT_eqdec:>EqDec K eq;
++    := mkODT { ODT_eqdec::EqDec K eq;
+                ODT_lt:K -> K -> Prop;
+-               ODT_lt_strorder:>StrictOrder ODT_lt;
++               ODT_lt_strorder::StrictOrder ODT_lt;
+                ODT_lt_dec: forall (a b:K), {ODT_lt a b} + {~ODT_lt a b};
+                ODT_compare:K -> K -> comparison;
+                ODT_compare_spec: forall x y : K,
+diff --git a/compiler/core/Utils/BindingsNat.v b/compiler/core/Utils/BindingsNat.v
+index aeb07a28..333f5737 100644
+--- a/compiler/core/Utils/BindingsNat.v
++++ b/compiler/core/Utils/BindingsNat.v
+@@ -16,7 +16,6 @@
+ natural number. *)
+ 
+ Require Import Arith.
+-Require Import NPeano.
+ Require Import Bindings.
+ 
+ Section BindingsNat.
+diff --git a/compiler/core/Utils/CoqLibAdd.v b/compiler/core/Utils/CoqLibAdd.v
+index d7547576..d6e7764d 100644
+--- a/compiler/core/Utils/CoqLibAdd.v
++++ b/compiler/core/Utils/CoqLibAdd.v
+@@ -28,7 +28,6 @@ Require Import EquivDec.
+ Require Import Equivalence.
+ Require Import Peano_dec.
+ Require Import ZArith.
+-Require Import Zdigits.
+ Require Import Znat.
+ Require Import Recdef.
+ Require Import Compare_dec.
+diff --git a/compiler/core/Utils/Fresh.v b/compiler/core/Utils/Fresh.v
+index 59c1ae7d..76895742 100644
+--- a/compiler/core/Utils/Fresh.v
++++ b/compiler/core/Utils/Fresh.v
+@@ -18,7 +18,7 @@ as strings). *)
+ Require Import String.
+ Require Import List.
+ Require Import Permutation.
+-Require Import Arith Min.
++Require Import Arith.
+ Require Import EquivDec.
+ Require Import Morphisms.
+ Require Import Lia.
+diff --git a/compiler/core/Utils/Lattice.v b/compiler/core/Utils/Lattice.v
+index d6f1e5cd..70a100c7 100644
+--- a/compiler/core/Utils/Lattice.v
++++ b/compiler/core/Utils/Lattice.v
+@@ -52,8 +52,8 @@ Section Lattice.
+         meet : A -> A -> A;
+         join : A -> A -> A;
+ 
+-        meet_morphism :> Proper (eqA ==> eqA ==> eqA) meet ;
+-        join_morphism :> Proper (eqA ==> eqA ==> eqA) join ;
++        meet_morphism :: Proper (eqA ==> eqA ==> eqA) meet ;
++        join_morphism :: Proper (eqA ==> eqA ==> eqA) join ;
+         
+         meet_commutative : commutative eqA meet;
+         meet_associative    : associative eqA meet;
+diff --git a/compiler/core/Utils/LiftIterators.v b/compiler/core/Utils/LiftIterators.v
+index c0880c52..b453eba7 100644
+--- a/compiler/core/Utils/LiftIterators.v
++++ b/compiler/core/Utils/LiftIterators.v
+@@ -15,8 +15,6 @@
+ (** This module provides support for monadic iterators over bags. *)
+ 
+ Require Import Arith.
+-Require Import Min.
+-Require Import Max.
+ Require Import Lia.
+ Require Import Permutation.
+ Require Import Equivalence.
+diff --git a/compiler/core/Utils/Monoid.v b/compiler/core/Utils/Monoid.v
+index b3fa83c4..03f21c27 100644
+--- a/compiler/core/Utils/Monoid.v
++++ b/compiler/core/Utils/Monoid.v
+@@ -56,8 +56,8 @@ Section Monoid.
+         merge: A -> A -> A;
+         z: A;
+ 
+-        merge_morphism :> Proper (eqA ==> eqA ==> eqA) merge ;
+-        z_morphism :> Proper (eqA) z;
++        merge_morphism :: Proper (eqA ==> eqA ==> eqA) merge ;
++        z_morphism :: Proper (eqA) z;
+ 
+         merge_assoc: associative eqA merge;
+         z_left: zero_left eqA merge z;
+diff --git a/compiler/core/Utils/StringAdd.v b/compiler/core/Utils/StringAdd.v
+index 9703f505..4e0e2e9b 100644
+--- a/compiler/core/Utils/StringAdd.v
++++ b/compiler/core/Utils/StringAdd.v
+@@ -20,7 +20,6 @@ Require Import Ascii.
+ Require Import List.
+ Require Import String.
+ Require Import Arith.
+-Require Import Min.
+ Require Import Equivalence.
+ Require Import EquivDec.
+ Require Import Compare_dec.
+@@ -381,8 +380,6 @@ Section Prefix.
+     induction l; simpl; destruct s; destruct n; simpl; trivial.
+     - f_equal.
+       apply IHl.
+-    - rewrite IHl; simpl; trivial.
+-    - rewrite IHl. simpl; trivial.
+   Qed.
+ 
+   Lemma substring_all l :
+@@ -401,8 +398,6 @@ Section Prefix.
+       f_equal.
+       f_equal.
+       lia.
+-    - rewrite IHl.
+-      match_case.
+   Qed.
+ 
+   Lemma substring_le_prefix s n m l :
+diff --git a/compiler/core/cNNRC/Lang/cNNRCVars.v b/compiler/core/cNNRC/Lang/cNNRCVars.v
+index 96cb5a83..a75d0669 100644
+--- a/compiler/core/cNNRC/Lang/cNNRCVars.v
++++ b/compiler/core/cNNRC/Lang/cNNRCVars.v
+@@ -15,7 +15,6 @@
+ Require Import String.
+ Require Import List.
+ Require Import Arith.
+-Require Import Max.
+ Require Import Peano_dec.
+ Require Import EquivDec.
+ Require Import Decidable.
+diff --git a/compiler/core/cNRAEnv/Context/cNRAEnvContext.v b/compiler/core/cNRAEnv/Context/cNRAEnvContext.v
+index 91d9774e..cff18a60 100644
+--- a/compiler/core/cNRAEnv/Context/cNRAEnvContext.v
++++ b/compiler/core/cNRAEnv/Context/cNRAEnvContext.v
+@@ -24,7 +24,6 @@ Require Import Program.
+ Require Import List.
+ Require Import Permutation.
+ Require Import String.
+-Require Import NPeano.
+ Require Import Arith.
+ Require Import Bool.
+ Require Import Utils.
+diff --git a/compiler/core/cNRAEnv/Context/cNRAEnvContextLift.v b/compiler/core/cNRAEnv/Context/cNRAEnvContextLift.v
+index d62df334..729b06e2 100644
+--- a/compiler/core/cNRAEnv/Context/cNRAEnvContextLift.v
++++ b/compiler/core/cNRAEnv/Context/cNRAEnvContextLift.v
+@@ -23,7 +23,6 @@ Require Import EquivDec.
+ Require Import Program.
+ Require Import List.
+ Require Import String.
+-Require Import NPeano.
+ Require Import Arith.
+ Require Import Utils.
+ Require Import DataRuntime.

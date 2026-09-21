@@ -383,3 +383,133 @@ modified, and no `Admitted` or `admit` was introduced anywhere:
 | Q*cert v2.1.1 | 0 | 0 |
 
 The axioms are the same four described in D-A0.
+
+## Phase 1.5 — Reversal: port to current Rocq first
+
+### D10. Option B chosen after all, superseding D4
+
+The user changed the decision on 2026-09-21: port the chain to current
+Rocq first, so that the library can be built with modern tooling. This
+supersedes D4. Phases 0 and 1 keep their value: the golden files, the
+`compile_sql` API and the unit tests are all expressed against behaviour,
+not against a Coq version, so they become the regression suite that the
+port has to keep green.
+
+Before planning the port I measured where each repository actually
+stands, rather than relying on the estimate in D4. Two findings changed
+the picture.
+
+**SQLFormalSemantics is further along than `with-floats` suggests.** The
+mirror carries a `parser+8.15` branch, dated 2024-12-11, whose Makefile
+and README target **Coq 8.15.2**. Its opam file still says `8.11.2`,
+which is why it did not show up as a port in the Phase 0 survey. It also
+drops the `coq-qcert` dependency and moves the SQL parser into
+SQLFormalSemantics, with `utils_coq.ml` and `basics_coq.ml` gone from the
+plugin — which is the direction D3 argued for, already taken upstream.
+
+**But that branch has no floats.** `Values.v` on `parser+8.15` contains
+no float constructor at all, against 50 occurrences on `with-floats`.
+The 8.15 work upstream sits on the no-floats line, matching
+SQLToNRACert's own `no-floats` branch. So the newer Coq version and the
+float support are, today, on different branches in both repositories.
+
+The landscape, measured:
+
+| Repository | Newest branch | Coq/Rocq version | Floats |
+|---|---|---|---|
+| JsAst | v4.0.0 (2026-02-27) | Rocq ≥ 9.0 | yes |
+| Q*cert | `master` (2023-07-08) | 8.15–8.16 | yes |
+| SQLFormalSemantics | `parser+8.15` (2024-12-11) | 8.15.2 | **no** |
+| SQLFormalSemantics | `with-floats` (2023-10-16) | 8.11.2 | yes |
+| SQLToNRACert | `main` (2023-10) | 8.11.2 | yes |
+| SQLToNRACert | `no-floats` | 8.11.2 | no |
+| dbcert | `main` | 8.11.2 | yes |
+
+JsAst needs no work. Everything else has a gap, and the two FormalData
+repositories have a branch-merge problem on top of a version gap.
+
+### D11. Toolchain for the port
+
+Installed from Ubuntu packages, which cover the whole modern stack and
+saved a from-source round like D5:
+
+| Component | Version |
+|---|---|
+| OCaml | 4.14.1 |
+| dune | 3.14.0 |
+| findlib | 1.9.6 |
+| zarith | 1.13 |
+| menhir | 20231231 |
+| js_of_ocaml | 5.6.0 |
+
+Rocq 9.0.0 is built from its GitHub release tarball into `/opt/rocq90`.
+Its own requirements are OCaml ≥ 4.09 tested up to 4.14.1, dune ≥ 3.8,
+zarith ≥ 1.11 and findlib ≥ 1.8.1, all satisfied. Note the tarball
+unpacks to `coq-9.0.0/` and the package names are `rocq-runtime`,
+`coq-core`, `rocq-core` and `coq`; `make dunestrap` has to run before
+`dune build`.
+
+The Phase 0 toolchain in `/opt/ocaml409` is left in place, so the
+baseline and its golden files stay reproducible while the port proceeds.
+
+### D12. Fallback if the port stalls
+
+Recorded so it is not rediscovered under pressure. Extraction produces
+plain OCaml, and the extracted module needs neither Zarith nor `Unix` nor
+`Str` (D2). If one repository in the chain proves unportable in
+reasonable time, the compiler can still be extracted by the old Coq and
+the resulting `.ml` compiled and bundled by the modern OCaml and
+js_of_ocaml. That keeps the library deliverable alive at the cost of
+keeping the legacy toolchain in the build. It is not the plan, only the
+escape hatch.
+
+### D13. First measurement of the Q*cert port, and a policy question
+
+Rocq 9.0.0 is built and working: JsAst v4.0.0, which upstream already
+ported, compiles and installs against it unchanged. That validates the
+toolchain end to end before any porting work.
+
+Q*cert `master` then went from **0 to 313 of 449 files** compiling under
+Rocq 9.0.0. The patch and its rationale are in `upstream/`. Three kinds of
+change were needed, in increasing order of how much judgement they take:
+
+1. Imports of stdlib modules Rocq 9 removed (`Min`, `Max`, `NPeano`,
+   `Zdigits`). Dead in all but one place; 32 import lines deleted and one
+   lemma renamed to `Nat.max_idempotent`. No judgement at all.
+2. `:>` to `::` in class fields, 36 occurrences in 14 files. This is the
+   Coq 8.17 change of meaning: `:>` now declares a coercion where it used
+   to declare an instance. Getting this wrong is what made
+   `Utils/Lattice.v` fail with undefined evars in setoid rewriting, which
+   looked like a deep problem and was a one-character migration.
+3. **Proof scripts.** Two lemmas in `Utils/StringAdd.v` had bullets for
+   goals that Rocq 9 now closes earlier, because `simpl; trivial` is
+   stronger than it was. The redundant bullets are deleted. Both lemmas
+   keep their exact statements and still end in `Qed`.
+
+Five files still fail, listed in `upstream/README.md`, and they block the
+remaining 136. Four are the same family as the `StringAdd.v` bullets and
+one is a notation precedence error.
+
+**The policy question.** The standing instruction is to never modify,
+weaken or admit a proof, and to stop and report if something requires
+touching proofs. A version port cannot honour that literally: proof
+scripts are tactic programs written against a particular prover, and
+moving four minor versions breaks some of them no matter what. What can
+be honoured, and what has been honoured so far, is the substance of the
+rule:
+
+* no theorem statement is changed;
+* no proof is replaced by `admit` or `Admitted`;
+* every lemma still closes with `Qed`, so the kernel checks it;
+* nothing is weakened, and no hypothesis is added.
+
+Under that reading, deleting a bullet whose goal no longer exists is not
+modifying a proof in the sense the rule protects against; the proof term
+the kernel accepts is still a complete proof of the same statement. The
+port cannot proceed on the stricter reading, so this is recorded as the
+interpretation in force, subject to the user saying otherwise.
+
+Every proof script touched will be listed individually, per repository,
+in the patch rationale under `upstream/`, so that the set stays auditable
+and small.
+
