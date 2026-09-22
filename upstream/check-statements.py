@@ -26,12 +26,22 @@ REQUIRE = re.compile(r'^\s*(From\s+\S+\s+)?Require\b')
 # alone is what would change it.  Normalise both to tell them apart from a
 # real edit to a field's name or type.
 FIELD_ATTR = re.compile(r'\s*::\s*|\s*:>\s*')
+# Rocq 9 makes a "::" field instance export-local, where the old ":>" was
+# global, so the faithful migration writes "#[global] f :: T".  Strip that
+# attribute only on lines that carry a field separator, so it cannot mask a
+# locality change anywhere else.
+FIELD_GLOBAL = re.compile(r'#\[global\]\s*')
+
+def norm_field(line):
+    if '::' in line or ':>' in line:
+        line = FIELD_GLOBAL.sub('', line)
+    return FIELD_ATTR.sub(' @ ', line)
 # Notation tokens whose surrounding whitespace the port had to change,
 # because Rocq 9 only lexes them when they stand apart from their operands.
 # Coq is insensitive to that spacing once the term parses, so normalising it
 # separates a respacing from a real edit.  Extend this list, never widen it
 # to "any whitespace".
-RESPACED_TOKENS = ['@ₐ']
+RESPACED_TOKENS = ['@ₐ', '@ₑ']
 NOTATION_SPACE = re.compile('|'.join(r'\s*' + re.escape(t) + r'\s*'
                                      for t in RESPACED_TOKENS))
 
@@ -93,8 +103,8 @@ def main():
             continue
         # If normalising the field attribute makes the two sides equal, the
         # only thing that changed is instance-vs-coercion, not the field.
-        na = [FIELD_ATTR.sub(' @ ', l) for l in a]
-        nb = [FIELD_ATTR.sub(' @ ', l) for l in b]
+        na = [norm_field(l) for l in a]
+        nb = [norm_field(l) for l in b]
         if na == nb:
             changed_attrs.append((rel, diff))
             continue

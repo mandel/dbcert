@@ -573,3 +573,48 @@ with Rocq 9.1.1. Until then the loop here is `coqc` on one file plus the
 `Show.` probe above, which is slower per attempt but has taken the port
 from 0 to 341 files.
 
+### D17. Q*cert: 457 of 459 modules, and the two lessons worth keeping
+
+The five failures reported in D15 are fixed, along with the ones they
+unblocked. Q*cert now builds 457 of the 459 modules listed in
+`Makefile.coq_modules` under Rocq 9.0.0. The two that remain are
+`Tests/LambdaNRATest.v` and `Tests/tDNNRCTest.v`, and the second only
+fails because it imports the first.
+
+Ten proof scripts were adjusted in total, each listed by file, line and
+reason in `upstream/README.md`. No statement changed; the guard reports
+zero. Beyond the goal-count family already described, three new causes
+turned up, and each is the kind of thing that is obvious once seen and
+expensive to rediscover:
+
+1. **A bare `::` class field is export-local.** The old `:>` was global.
+   So after the migration an instance is only active where the defining
+   module is `Import`ed, not merely `Require`d. This is what broke the
+   four `Compiler/Lib` functors, which could no longer infer
+   `foreign_data` for `Data.data`. Writing `#[global] f :: T` restores
+   the original locality exactly and fixes every consumer without
+   touching any of them. Adding imports to the consumers would also have
+   worked and was rejected: it spreads the change across more files and
+   leaves the class semantically different from the original.
+
+2. **`var` is a notation for `string`, and that now matters.** In
+   `NNRCtoNNRCMR.v` the goal holds an `if` whose decision is
+   `@equiv_dec var … output output`, while writing
+   `destruct (equiv_dec output output)` elaborates at `string`. The two
+   are definitionally equal but not syntactically, so the tactic silently
+   destructed a fresh copy and left the goal untouched, after which
+   `congruence` failed. The fix is to name the instance explicitly.
+
+3. **Matching is stricter about eta.** In `ImpDatatoImpEJson.v` the goal
+   holds `map (imp_data_expr_eval h σ) el` while `case_eq` had been given
+   the eta-expanded `map (fun x => imp_data_expr_eval h σ x) el`, so the
+   resulting equation no longer rewrote. Eta-reducing the `case_eq`
+   argument makes them agree.
+
+A methodological note, since it cost real time twice. When a probe
+truncates a file to inspect a goal, the truncation must keep the bullet
+that focuses it, and a candidate tactic must be tested **with** its
+bullet. Replacing the whole `* tac.` line with `tac.` drops the focus and
+produces a confident, wrong answer: the tactic appears to close goals it
+never saw.
+

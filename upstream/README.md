@@ -17,9 +17,9 @@ version port is allowed to produce:
 
 * **import-only** — a `Require` line for a module the new standard library
   no longer ships;
-* **class-field attribute** — `:>` rewritten to `::`, verified by
-  normalising both to the same token and re-comparing, so a change to a
-  field's name or type cannot hide here;
+* **class-field attribute** — `:>` rewritten to `#[global] … ::`,
+  verified by normalising both spellings to the same token and
+  re-comparing, so a change to a field's name or type cannot hide here;
 * **notation respacing** — whitespace around a notation token that Rocq 9
   only lexes when it stands apart from its operands, again verified by
   normalising that token's spacing and re-comparing;
@@ -32,17 +32,18 @@ non-zero if any statement changed. Current result against Q*cert:
 files compared:                    467
 import-only differences:           33
 class-field attribute migrations:  14
-notation respacing only:           2
-STATEMENT differences:             0
+notation respacing only:            3
+STATEMENT differences:              0
 ```
 
 ## qcert-rocq9-wip.patch — Q*cert from Coq 8.16 to Rocq 9.0
 
 Part of the port described in DECISIONS.md D10. Against `master`, which
 targets Coq 8.15–8.16, this patch takes the Coq development from 0 to
-**341 of 449 files** compiling under Rocq 9.0.0. It touches 53 files with
-53 insertions and 93 deletions, and changes no statement of any theorem,
-which `check-statements.py` verifies mechanically.
+**457 of the 459 modules** listed in `Makefile.coq_modules` compiling
+under Rocq 9.0.0. It touches 60 files with 65 insertions and 107
+deletions, and changes no statement of any theorem, which
+`check-statements.py` verifies mechanically.
 
 Four kinds of change, all of them the documented migrations:
 
@@ -78,26 +79,35 @@ Four kinds of change, all of them the documented migrations:
    | `Utils/StringAdd.v` | the lemma following it | one of two bullets dropped, same reason |
    | `NNRC/Lang/NNRCStratify.v` | `eval_nnrc_with_substs` helper, line 1286 | trailing `rewrite IHsdefs; trivial` dropped; `match_case`'s own `trivial` now closes the goal |
    | `Translation/Typing/TNRAtocNNRC.v` | line 113 | trailing `eapply Forall_nil` dropped; the preceding `econstructor; eauto` now closes it |
+   | `Translation/Typing/TcNRAEnvtocNNRC.v` | line 112 | same, `eapply Forall_nil` dropped |
+   | `cNRAEnv/Lang/cNRAEnv.v` | `cNRAEnvEither` case, line 1381 | the dispatch `[rewrite IHae1|rewrite IHae2]` expected two goals and faced five, because `simpl; trivial` now leaves a different split; replaced by `solve [rewrite IHae1; reflexivity | rewrite IHae2; reflexivity]`, which is insensitive to the count |
+   | `NNRC/Optim/TNNRCRewrite.v` | `tnnrcproject_over_rec_nin`, line 1221 | `destruct …; [| intuition]; [intuition | ]` became a one-goal dispatch because `intuition` now closes both branches; reduced to `[intuition | ]`, keeping the `~ In s sl` branch the rest of the proof needs |
+   | `Translation/Lang/NNRCtoNNRCMR.v` | two sites, lines 363 and 416 | `case (equiv_dec output output)` silently stopped matching, because the `if` in the goal is at type `var` while a fresh `equiv_dec` elaborates at `string`; replaced by an explicit `destruct (@equiv_dec var … output output)` followed by the `string`-typed one |
+   | `Translation/Lang/ImpDatatoImpEJson.v` | two sites, lines 499 and 666 | `rewrite H0` stopped matching because the goal holds `map (imp_data_expr_eval h σ) el` while `case_eq` had produced the eta-expanded `map (fun x => imp_data_expr_eval h σ x) el`; the `case_eq` argument is eta-reduced so the two agree again |
+   | `LambdaNRA/Typing/TLambdaNRA.v` | lines 176, 209 and 297 | three rewrites of `lnra_lambda_eval_lambda_eq` and one `omap_product_ext` are now no-ops, because that lemma holds by `reflexivity` and Rocq 9 already presents the reduced form; the dead rewrites are removed |
 
 ### Not yet done
 
-Five files still fail, and they block the remaining 108. Each fix unblocks
-more files, which then reveal their own breakages, so this list turns over
-rather than shrinking monotonically.
+Two of the 459 listed modules still fail, both of them test files, and one
+blocks the other:
 
 | File | Line | Error |
 |---|---|---|
-| `cNRAEnv/Lang/cNRAEnv.v` | 1381 | Tactic failure: incorrect number of goals (expected 0 tactics) |
-| `Translation/Lang/ImpDatatoImpEJson.v` | 501 | Found no subterm matching |
-| `LambdaNRA/Typing/TLambdaNRA.v` | 176 | Found no subterm matching |
-| `Translation/Lang/NNRCtoNNRCMR.v` | 363 | Wrong bullet `-`: current bullet `*` is not finished |
-| `NNRC/Optim/TNNRCRewrite.v` | 1221 | Tactic failure: incorrect number of goals (expected 1 tactic) |
+| `Tests/LambdaNRATest.v` | 112 | Found no subterm matching |
+| `Tests/tDNNRCTest.v` | 27 | cannot find `LambdaNRATest` (it only fails because the above does) |
 
-Three are goal-count problems of the kind already fixed. Two are "found no
-subterm matching", where a `rewrite` no longer matches because the term it
-targets has a different shape; those need the goal read rather than a line
-deleted. `cNRAEnv.v:1381` is the awkward one: the dispatch
-`[rewrite IHae1|rewrite IHae2]` expects two goals and now faces five.
+`LambdaNRATest.v:112` is a `rewrite H` where the hypothesis carries
+`olift f (edot …)` and the goal carries the reduced `match edot … with`
+form. `unfold olift in H` makes that one rewrite succeed and makes the
+following `rewrite olift_some` redundant, but the case split further down
+then leaves three goals where the proof has two `*` bullets, and the
+obvious closers (`trivial`, `congruence`, `unfold lift`, `simpl`) do not
+discharge them. The two leftover goals are the contradictory pair
+`lift dcoll (lift … (lift_map …)) = lift dcoll None` and its mirror, so
+what is needed is whatever relates them to `IHl`. This one is parked
+rather than guessed at; the file is a test, not part of the compiler, but
+the extraction Makefile lists it, so it has to build for
+`make qcert-ocaml-extract` to run.
 
 ### How to probe a goal count
 

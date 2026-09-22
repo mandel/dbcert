@@ -1,5 +1,5 @@
 diff --git a/compiler/core/Data/DataSystem.v b/compiler/core/Data/DataSystem.v
-index c0fc0f4c..ced0dc9c 100644
+index c0fc0f4c..af9efa71 100644
 --- a/compiler/core/Data/DataSystem.v
 +++ b/compiler/core/Data/DataSystem.v
 @@ -17,9 +17,9 @@ Require Export DataTypes.
@@ -10,14 +10,14 @@ index c0fc0f4c..ced0dc9c 100644
 -         ; basic_model_foreign_type :> foreign_type
 -         ; basic_model_brand_model :> brand_model
 -         ; basic_model_foreign_typing :> foreign_typing
-+         basic_model_runtime :: foreign_runtime
-+         ; basic_model_foreign_type :: foreign_type
-+         ; basic_model_brand_model :: brand_model
-+         ; basic_model_foreign_typing :: foreign_typing
++         #[global] basic_model_runtime :: foreign_runtime
++         ; #[global] basic_model_foreign_type :: foreign_type
++         ; #[global] basic_model_brand_model :: brand_model
++         ; #[global] basic_model_foreign_typing :: foreign_typing
         }.
  
 diff --git a/compiler/core/Data/ForeignRuntime.v b/compiler/core/Data/ForeignRuntime.v
-index 74eba5c9..e17be136 100644
+index 74eba5c9..a990b183 100644
 --- a/compiler/core/Data/ForeignRuntime.v
 +++ b/compiler/core/Data/ForeignRuntime.v
 @@ -17,7 +17,7 @@ Require Export ForeignOperators.
@@ -26,12 +26,12 @@ index 74eba5c9..e17be136 100644
    := mk_foreign_runtime {
 -         foreign_runtime_data :> foreign_data
 -         ; foreign_runtime_operators :> foreign_operators
-+         foreign_runtime_data :: foreign_data
-+         ; foreign_runtime_operators :: foreign_operators
++         #[global] foreign_runtime_data :: foreign_data
++         ; #[global] foreign_runtime_operators :: foreign_operators
         }.
  
 diff --git a/compiler/core/Data/ForeignTyping.v b/compiler/core/Data/ForeignTyping.v
-index 9b6db32d..ea61f22a 100644
+index 9b6db32d..5c0a1efb 100644
 --- a/compiler/core/Data/ForeignTyping.v
 +++ b/compiler/core/Data/ForeignTyping.v
 @@ -23,7 +23,7 @@ Class foreign_typing
@@ -40,12 +40,12 @@ index 9b6db32d..ea61f22a 100644
    := mk_foreign_typing {
 -          foreign_typing_data :> foreign_data_typing
 -         ; foreign_typing_operators :> foreign_operators_typing
-+          foreign_typing_data :: foreign_data_typing
-+         ; foreign_typing_operators :: foreign_operators_typing
++          #[global] foreign_typing_data :: foreign_data_typing
++         ; #[global] foreign_typing_operators :: foreign_operators_typing
         }.
  
 diff --git a/compiler/core/Data/Model/ForeignData.v b/compiler/core/Data/Model/ForeignData.v
-index 47f21a7f..5c594a24 100644
+index 47f21a7f..8f719f4c 100644
 --- a/compiler/core/Data/Model/ForeignData.v
 +++ b/compiler/core/Data/Model/ForeignData.v
 @@ -22,14 +22,14 @@ Section ForeignData.
@@ -53,21 +53,21 @@ index 47f21a7f..5c594a24 100644
  (* TODO: #35 is needed before we can generalize this
    ; foreign_data_equiv (a b : foreign_data_model) : Prop
 -  ; foreign_data_equiv_equiv :> Equivalence foreign_data_equiv
-+  ; foreign_data_equiv_equiv :: Equivalence foreign_data_equiv
++  ; #[global] foreign_data_equiv_equiv :: Equivalence foreign_data_equiv
   *) 
 -           ; foreign_data_dec :> EqDec foreign_data_model eq
-+           ; foreign_data_dec :: EqDec foreign_data_model eq
++           ; #[global] foreign_data_dec :: EqDec foreign_data_model eq
             ; foreign_data_normalized (a : foreign_data_model) : Prop
             ; foreign_data_normalize (a : foreign_data_model) : foreign_data_model
             ; foreign_data_normalize_normalizes (a : foreign_data_model) : foreign_data_normalized (foreign_data_normalize a)
             ; foreign_data_normalize_idempotent (a : foreign_data_model) : foreign_data_normalized a -> foreign_data_normalize a = a
 -           ; foreign_data_tostring :> ToString foreign_data_model
-+           ; foreign_data_tostring :: ToString foreign_data_model
++           ; #[global] foreign_data_tostring :: ToString foreign_data_model
        }.
  
  End ForeignData.
 diff --git a/compiler/core/Data/Operators/ForeignOperators.v b/compiler/core/Data/Operators/ForeignOperators.v
-index 64c5818d..6ccec201 100644
+index 64c5818d..f87a6252 100644
 --- a/compiler/core/Data/Operators/ForeignOperators.v
 +++ b/compiler/core/Data/Operators/ForeignOperators.v
 @@ -26,8 +26,8 @@ Section ForeignOperators.
@@ -76,8 +76,8 @@ index 64c5818d..6ccec201 100644
             foreign_operators_unary : Set
 -           ; foreign_operators_unary_dec :> EqDec foreign_operators_unary eq
 -           ; foreign_operators_unary_tostring :> ToString foreign_operators_unary
-+           ; foreign_operators_unary_dec :: EqDec foreign_operators_unary eq
-+           ; foreign_operators_unary_tostring :: ToString foreign_operators_unary
++           ; #[global] foreign_operators_unary_dec :: EqDec foreign_operators_unary eq
++           ; #[global] foreign_operators_unary_tostring :: ToString foreign_operators_unary
             ; foreign_operators_unary_interp
                 (br:brand_relation_t)
                 (op:foreign_operators_unary)
@@ -87,13 +87,13 @@ index 64c5818d..6ccec201 100644
             ; foreign_operators_binary : Set
 -           ; foreign_operators_binary_dec :> EqDec foreign_operators_binary eq
 -           ; foreign_operators_binary_tostring :> ToString foreign_operators_binary
-+           ; foreign_operators_binary_dec :: EqDec foreign_operators_binary eq
-+           ; foreign_operators_binary_tostring :: ToString foreign_operators_binary
++           ; #[global] foreign_operators_binary_dec :: EqDec foreign_operators_binary eq
++           ; #[global] foreign_operators_binary_tostring :: ToString foreign_operators_binary
             ; foreign_operators_binary_interp
                 (br:brand_relation_t)
                 (op:foreign_operators_binary)
 diff --git a/compiler/core/EJson/Model/ForeignEJson.v b/compiler/core/EJson/Model/ForeignEJson.v
-index 2dfd7a7a..1386ad9f 100644
+index 2dfd7a7a..8e56947b 100644
 --- a/compiler/core/EJson/Model/ForeignEJson.v
 +++ b/compiler/core/EJson/Model/ForeignEJson.v
 @@ -20,12 +20,12 @@ Section ForeignEJson.
@@ -101,18 +101,18 @@ index 2dfd7a7a..1386ad9f 100644
    Class foreign_ejson (foreign_ejson_model : Set) : Type
      := mk_foreign_ejson {
 -           foreign_ejson_dec :> EqDec foreign_ejson_model eq
-+           foreign_ejson_dec :: EqDec foreign_ejson_model eq
++           #[global] foreign_ejson_dec :: EqDec foreign_ejson_model eq
             ; foreign_ejson_normalized (a : foreign_ejson_model) : Prop
             ; foreign_ejson_normalize (a : foreign_ejson_model) : foreign_ejson_model
             ; foreign_ejson_normalize_normalizes (a : foreign_ejson_model) : foreign_ejson_normalized (foreign_ejson_normalize a)
             ; foreign_ejson_normalize_idempotent (a : foreign_ejson_model) : foreign_ejson_normalized a -> foreign_ejson_normalize a = a
 -           ; foreign_ejson_tostring :> ToString foreign_ejson_model
-+           ; foreign_ejson_tostring :: ToString foreign_ejson_model
++           ; #[global] foreign_ejson_tostring :: ToString foreign_ejson_model
        }.
  
  End ForeignEJson.
 diff --git a/compiler/core/EJson/Operators/ForeignEJsonRuntime.v b/compiler/core/EJson/Operators/ForeignEJsonRuntime.v
-index 0210bf24..a83ffc63 100644
+index 0210bf24..f2bfffed 100644
 --- a/compiler/core/EJson/Operators/ForeignEJsonRuntime.v
 +++ b/compiler/core/EJson/Operators/ForeignEJsonRuntime.v
 @@ -26,8 +26,8 @@ Section ForeignEJsonRuntime.
@@ -121,8 +121,8 @@ index 0210bf24..a83ffc63 100644
      := mk_foreign_ejson_runtime {
 -           foreign_ejson_runtime_op_dec :> EqDec foreign_ejson_runtime_op eq
 -           ; foreign_ejson_runtime_op_tostring :> ToString foreign_ejson_runtime_op
-+           foreign_ejson_runtime_op_dec :: EqDec foreign_ejson_runtime_op eq
-+           ; foreign_ejson_runtime_op_tostring :: ToString foreign_ejson_runtime_op
++           #[global] foreign_ejson_runtime_op_dec :: EqDec foreign_ejson_runtime_op eq
++           ; #[global] foreign_ejson_runtime_op_tostring :: ToString foreign_ejson_runtime_op
             ; foreign_ejson_runtime_op_interp 
                 (f:foreign_ejson_runtime_op)
                 (dl:list (@ejson foreign_ejson_model)) : option (@ejson foreign_ejson_model)
@@ -174,6 +174,35 @@ index 165cae1b..fe685b35 100644
  Require Import Bool.
  Require Import Peano_dec.
  Require Import EquivDec.
+diff --git a/compiler/core/LambdaNRA/Typing/TLambdaNRA.v b/compiler/core/LambdaNRA/Typing/TLambdaNRA.v
+index 70b5a170..cf745d12 100644
+--- a/compiler/core/LambdaNRA/Typing/TLambdaNRA.v
++++ b/compiler/core/LambdaNRA/Typing/TLambdaNRA.v
+@@ -173,7 +173,6 @@ Section TLambdaNRA.
+         apply some_lift in edd1.
+         destruct edd1 as [dd11 ? tdd11]; subst.
+         rewrite e.
+-        rewrite lnra_lambda_eval_lambda_eq.
+         assert (bt1:bindings_type (rec_sort (env ++ [(s, a)])) (rec_sort (Γ ++ [(s, τ₀)])) ).
+         {
+           apply bindings_type_sort.
+@@ -207,8 +206,6 @@ Section TLambdaNRA.
+           constructor; simpl; intuition. 
+         }
+         destruct (IHe1 _ _ _ bt1 H1) as [dd3 [edd3 tdd3]].
+-        rewrite (omap_product_ext _  (fun d => lambda_nra_eval brand_relation_brands cenv (rec_sort (env ++ [(s, d)])) e1));
+-          [ | intros; apply lnra_lambda_eval_lambda_eq ].
+         dtype_inverter.
+         apply Col_inv in tdd1.
+         apply Col_inv in tdd3.
+@@ -297,7 +294,6 @@ Section TLambdaNRA.
+         apply some_lift in edd1.
+         destruct edd1 as [dd11 dd11e dd11t]; subst.
+         rewrite dd11e.
+-        rewrite lnra_lambda_eval_lambda_eq.
+         assert (bt1:bindings_type (rec_sort (env ++ [(s, a)])) (rec_sort (Γ ++ [(s, τ0)])) ).
+         {
+           apply bindings_type_sort.
 diff --git a/compiler/core/NNRC/Lang/NNRC.v b/compiler/core/NNRC/Lang/NNRC.v
 index 3b8520f7..78db3327 100644
 --- a/compiler/core/NNRC/Lang/NNRC.v
@@ -210,8 +239,22 @@ index a69e5742..3f3b8e97 100644
  Require Import Bool.
  Require Import Peano_dec.
  Require Import EquivDec.
+diff --git a/compiler/core/NNRC/Optim/TNNRCRewrite.v b/compiler/core/NNRC/Optim/TNNRCRewrite.v
+index 472b042a..07d3aa7a 100644
+--- a/compiler/core/NNRC/Optim/TNNRCRewrite.v
++++ b/compiler/core/NNRC/Optim/TNNRCRewrite.v
+@@ -1218,8 +1218,7 @@ Section TNNRCRewrite.
+     - econstructor; eauto 2.
+       econstructor; eauto 2.
+       + reflexivity.
+-      + destruct (@in_dec string string_dec
+-                        s sl); [| intuition]; [intuition | ].
++      + destruct (@in_dec string string_dec s sl); [intuition | ].
+         simpl.
+         econstructor; eauto.
+     - intros.
 diff --git a/compiler/core/NNRCMR/Lang/ForeignReduceOps.v b/compiler/core/NNRCMR/Lang/ForeignReduceOps.v
-index 5a3ba607..2047ff16 100644
+index 5a3ba607..4bc0d0c4 100644
 --- a/compiler/core/NNRCMR/Lang/ForeignReduceOps.v
 +++ b/compiler/core/NNRCMR/Lang/ForeignReduceOps.v
 @@ -22,8 +22,8 @@ Section ForeignReduceOps.
@@ -220,8 +263,8 @@ index 5a3ba607..2047ff16 100644
             foreign_reduce_op_type : Set
 -           ; foreign_reduce_op_dec :> EqDec foreign_reduce_op_type eq
 -           ; foreign_reduce_op_tostring :> ToString foreign_reduce_op_type
-+           ; foreign_reduce_op_dec :: EqDec foreign_reduce_op_type eq
-+           ; foreign_reduce_op_tostring :: ToString foreign_reduce_op_type
++           ; #[global] foreign_reduce_op_dec :: EqDec foreign_reduce_op_type eq
++           ; #[global] foreign_reduce_op_tostring :: ToString foreign_reduce_op_type
             ; foreign_reduce_op_interp 
                 (br:brand_relation_t)
                 (op:foreign_reduce_op_type)
@@ -558,8 +601,56 @@ index 9778d5c2..52d996d0 100644
    Proof.
      unfold typed_nra_total.
      generalize (typed_nra_yields_typed_data c d op dt_c pf HOpT); intros.
+diff --git a/compiler/core/Translation/Lang/ImpDatatoImpEJson.v b/compiler/core/Translation/Lang/ImpDatatoImpEJson.v
+index 858f85ee..5b818d4e 100644
+--- a/compiler/core/Translation/Lang/ImpDatatoImpEJson.v
++++ b/compiler/core/Translation/Lang/ImpDatatoImpEJson.v
+@@ -496,7 +496,7 @@ Section ImpDatatoImpEJson.
+           unfold lift, olift;
+           case_eq
+             (lift_map (fun x : option imp_data_model => x)
+-                      (map (fun x : imp_data_expr => imp_data_expr_eval h σ x) el)); intros;
++                      (map (imp_data_expr_eval h σ) el)); intros;
+           unfold imp_data_model, ImpEval.imp_expr, imp_data_expr, imp_data_model, foreign_runtime_data in *;
+           rewrite H0; reflexivity].
+       (* just one param *)
+@@ -663,7 +663,7 @@ Section ImpDatatoImpEJson.
+           unfold lift, olift;
+           case_eq
+             (lift_map (fun x : option imp_data_model => x)
+-                      (map (fun x : imp_data_expr => imp_data_expr_eval h σ x) el)); intros;
++                      (map (imp_data_expr_eval h σ) el)); intros;
+           unfold imp_data_model, ImpEval.imp_expr, imp_data_expr, imp_data_model, foreign_runtime_data in *;
+           rewrite H0; reflexivity].
+       (* just two param *)
+diff --git a/compiler/core/Translation/Lang/NNRCtoNNRCMR.v b/compiler/core/Translation/Lang/NNRCtoNNRCMR.v
+index 69bad4c7..f5b21b37 100644
+--- a/compiler/core/Translation/Lang/NNRCtoNNRCMR.v
++++ b/compiler/core/Translation/Lang/NNRCtoNNRCMR.v
+@@ -360,6 +360,9 @@ Section NNRCtoNNRCMR.
+       simpl.
+       case (equiv_dec output output);
+         try congruence; intros.
++      destruct (@equiv_dec var (@eq var) (@eq_equivalence var) string_eqdec output output); try congruence.
++      simpl.
++      destruct (equiv_dec output output); [reflexivity | congruence].
+     - specialize (H1 v); clear H0.
+       simpl in *.
+       dest_eqdec; try congruence.
+@@ -410,8 +413,9 @@ Section NNRCtoNNRCMR.
+       case (equiv_dec output output);
+         try congruence; intros.
+       simpl.
+-      case (equiv_dec output output);
+-        congruence.
++      destruct (@equiv_dec var (@eq var) (@eq_equivalence var) string_eqdec output output); try congruence.
++      simpl.
++      destruct (equiv_dec output output); [reflexivity | congruence].
+   Qed.
+ 
+   (* --------------------------------- *
 diff --git a/compiler/core/Translation/Model/ForeignDataToEJson.v b/compiler/core/Translation/Model/ForeignDataToEJson.v
-index 856190f7..6923f2da 100644
+index 856190f7..d0c0ebaf 100644
 --- a/compiler/core/Translation/Model/ForeignDataToEJson.v
 +++ b/compiler/core/Translation/Model/ForeignDataToEJson.v
 @@ -30,7 +30,7 @@ Class foreign_to_ejson
@@ -567,7 +658,7 @@ index 856190f7..6923f2da 100644
    : Type
    := mk_foreign_to_ejson {
 -         foreign_to_ejson_runtime :> foreign_ejson_runtime foreign_ejson_runtime_op
-+         foreign_to_ejson_runtime :: foreign_ejson_runtime foreign_ejson_runtime_op
++         #[global] foreign_to_ejson_runtime :: foreign_ejson_runtime foreign_ejson_runtime_op
           ; foreign_to_ejson_to_data
               (j:foreign_ejson_model) : foreign_data_model
           ; foreign_to_ejson_from_data
@@ -583,8 +674,20 @@ index ef5e2873..c40444ce 100644
        + apply IHnra_type2; simpl; trivial; match_destr; elim_fresh e.
        + econstructor; eauto.
          simpl; match_destr; elim_fresh e.
+diff --git a/compiler/core/Translation/Typing/TcNRAEnvtocNNRC.v b/compiler/core/Translation/Typing/TcNRAEnvtocNNRC.v
+index 2b95aa04..ce4b841e 100644
+--- a/compiler/core/Translation/Typing/TcNRAEnvtocNNRC.v
++++ b/compiler/core/Translation/Typing/TcNRAEnvtocNNRC.v
+@@ -109,7 +109,6 @@ Section TcNRAEnvtocNNRC.
+       + econstructor. econstructor; qeauto.
+         econstructor; qeauto.
+         econstructor; qeauto.
+-        eapply Forall_nil.
+       + apply IHnraenv_core_type2; simpl; trivial; match_destr; elim_fresh e.
+       + econstructor; qeauto.
+         simpl; match_destr; elim_fresh e.
 diff --git a/compiler/core/TypeSystem/ForeignType.v b/compiler/core/TypeSystem/ForeignType.v
-index 42647bdc..9fa06ca3 100644
+index 42647bdc..4e2300da 100644
 --- a/compiler/core/TypeSystem/ForeignType.v
 +++ b/compiler/core/TypeSystem/ForeignType.v
 @@ -22,16 +22,16 @@ Section ForeignType.
@@ -592,26 +695,26 @@ index 42647bdc..9fa06ca3 100644
  (* TODO: #35 is needed before we can generalize this
    ; foreign_type_equiv (a b : foreign_type_type) : Prop
 -  ; foreign_type_equiv_equiv :> Equivalence foreign_type_equiv
-+  ; foreign_type_equiv_equiv :: Equivalence foreign_type_equiv
++  ; #[global] foreign_type_equiv_equiv :: Equivalence foreign_type_equiv
   *) 
 -           ; foreign_type_dec :> EqDec foreign_type_type eq
 -           ; foreign_type_lattice :> Lattice foreign_type_type eq
-+           ; foreign_type_dec :: EqDec foreign_type_type eq
-+           ; foreign_type_lattice :: Lattice foreign_type_type eq
++           ; #[global] foreign_type_dec :: EqDec foreign_type_type eq
++           ; #[global] foreign_type_lattice :: Lattice foreign_type_type eq
             ; foreign_type_sub (a b : foreign_type_type) : Prop
             ; foreign_type_sub_dec (a b : foreign_type_type) :
                 { foreign_type_sub a b} + {~ foreign_type_sub a b}
 -           ; foreign_type_sub_pre :> PreOrder foreign_type_sub
 -           ; foreign_type_sub_part :> PartialOrder eq foreign_type_sub
 -           ; foreign_type_olattice :> OLattice eq foreign_type_sub
-+           ; foreign_type_sub_pre :: PreOrder foreign_type_sub
-+           ; foreign_type_sub_part :: PartialOrder eq foreign_type_sub
-+           ; foreign_type_olattice :: OLattice eq foreign_type_sub
++           ; #[global] foreign_type_sub_pre :: PreOrder foreign_type_sub
++           ; #[global] foreign_type_sub_part :: PartialOrder eq foreign_type_sub
++           ; #[global] foreign_type_olattice :: OLattice eq foreign_type_sub
        }.
    
  End ForeignType.
 diff --git a/compiler/core/TypeSystem/TBrandModel.v b/compiler/core/TypeSystem/TBrandModel.v
-index def4ec1c..e45d3596 100644
+index def4ec1c..116fd2b3 100644
 --- a/compiler/core/TypeSystem/TBrandModel.v
 +++ b/compiler/core/TypeSystem/TBrandModel.v
 @@ -124,8 +124,8 @@ Section TBrandModel.
@@ -620,8 +723,8 @@ index def4ec1c..e45d3596 100644
          (* note that brand_context_brand_model can have duplicates in the domain *)
 -        brand_model_relation :> brand_relation;
 -        brand_model_context :> brand_context;
-+        brand_model_relation :: brand_relation;
-+        brand_model_context :: brand_context;
++        #[global] brand_model_relation :: brand_relation;
++        #[global] brand_model_context :: brand_context;
          brand_model_domain_b :
           holds (brand_model_domain_dec);
              
@@ -652,7 +755,7 @@ index 65476395..122478f6 100644
  Require Import Lia.
  Require Import Permutation.
 diff --git a/compiler/core/Utils/Bindings.v b/compiler/core/Utils/Bindings.v
-index 0ad2b75a..7232a4f5 100644
+index 0ad2b75a..a2118b1c 100644
 --- a/compiler/core/Utils/Bindings.v
 +++ b/compiler/core/Utils/Bindings.v
 @@ -40,9 +40,9 @@ Require Import StringAdd.
@@ -660,10 +763,10 @@ index 0ad2b75a..7232a4f5 100644
  
    Class ODT {K:Type}
 -    := mkODT { ODT_eqdec:>EqDec K eq;
-+    := mkODT { ODT_eqdec::EqDec K eq;
++    := mkODT { #[global] ODT_eqdec ::EqDec K eq;
                 ODT_lt:K -> K -> Prop;
 -               ODT_lt_strorder:>StrictOrder ODT_lt;
-+               ODT_lt_strorder::StrictOrder ODT_lt;
++               #[global] ODT_lt_strorder ::StrictOrder ODT_lt;
                 ODT_lt_dec: forall (a b:K), {ODT_lt a b} + {~ODT_lt a b};
                 ODT_compare:K -> K -> comparison;
                 ODT_compare_spec: forall x y : K,
@@ -705,7 +808,7 @@ index 59c1ae7d..76895742 100644
  Require Import Morphisms.
  Require Import Lia.
 diff --git a/compiler/core/Utils/Lattice.v b/compiler/core/Utils/Lattice.v
-index d6f1e5cd..70a100c7 100644
+index d6f1e5cd..41b7a8f6 100644
 --- a/compiler/core/Utils/Lattice.v
 +++ b/compiler/core/Utils/Lattice.v
 @@ -52,8 +52,8 @@ Section Lattice.
@@ -714,8 +817,8 @@ index d6f1e5cd..70a100c7 100644
  
 -        meet_morphism :> Proper (eqA ==> eqA ==> eqA) meet ;
 -        join_morphism :> Proper (eqA ==> eqA ==> eqA) join ;
-+        meet_morphism :: Proper (eqA ==> eqA ==> eqA) meet ;
-+        join_morphism :: Proper (eqA ==> eqA ==> eqA) join ;
++        #[global] meet_morphism :: Proper (eqA ==> eqA ==> eqA) meet ;
++        #[global] join_morphism :: Proper (eqA ==> eqA ==> eqA) join ;
          
          meet_commutative : commutative eqA meet;
          meet_associative    : associative eqA meet;
@@ -733,7 +836,7 @@ index c0880c52..b453eba7 100644
  Require Import Permutation.
  Require Import Equivalence.
 diff --git a/compiler/core/Utils/Monoid.v b/compiler/core/Utils/Monoid.v
-index b3fa83c4..03f21c27 100644
+index b3fa83c4..ca770152 100644
 --- a/compiler/core/Utils/Monoid.v
 +++ b/compiler/core/Utils/Monoid.v
 @@ -56,8 +56,8 @@ Section Monoid.
@@ -742,8 +845,8 @@ index b3fa83c4..03f21c27 100644
  
 -        merge_morphism :> Proper (eqA ==> eqA ==> eqA) merge ;
 -        z_morphism :> Proper (eqA) z;
-+        merge_morphism :: Proper (eqA ==> eqA ==> eqA) merge ;
-+        z_morphism :: Proper (eqA) z;
++        #[global] merge_morphism :: Proper (eqA ==> eqA ==> eqA) merge ;
++        #[global] z_morphism :: Proper (eqA) z;
  
          merge_assoc: associative eqA merge;
          z_left: zero_left eqA merge z;
@@ -814,7 +917,7 @@ index d62df334..729b06e2 100644
  Require Import Utils.
  Require Import DataRuntime.
 diff --git a/compiler/core/cNRAEnv/Lang/cNRAEnv.v b/compiler/core/cNRAEnv/Lang/cNRAEnv.v
-index da8aab12..11de94ee 100644
+index da8aab12..c5cc2935 100644
 --- a/compiler/core/cNRAEnv/Lang/cNRAEnv.v
 +++ b/compiler/core/cNRAEnv/Lang/cNRAEnv.v
 @@ -1210,7 +1210,7 @@ Section cNRAEnv.
@@ -835,3 +938,38 @@ index da8aab12..11de94ee 100644
              (("PBIND", env)
               :: ("PDATA", a) :: nil)) ⊣ constant_env); intros.
        destruct o; try reflexivity; simpl.
+@@ -1378,7 +1378,7 @@ Section cNRAEnv.
+     - Case "cNRAEnvDefault"%string.
+       rewrite IHae1; rewrite IHae2; reflexivity.
+     - Case "cNRAEnvEither"%string.
+-      destruct x; simpl; trivial; [rewrite IHae1|rewrite IHae2]; reflexivity.
++      destruct x; simpl; trivial; solve [rewrite IHae1; reflexivity | rewrite IHae2; reflexivity].
+     - Case "cNRAEnvEitherConcat"%string.
+       rewrite IHae2. generalize ((h ⊢ (nra_of_nraenv_core ae2) @ₐ (nra_context_data env x) ⊣ constant_env)); intros.
+       destruct o; try reflexivity; simpl;
+diff --git a/compiler/core/cNRAEnv/Lang/cNRAEnvIgnore.v b/compiler/core/cNRAEnv/Lang/cNRAEnvIgnore.v
+index c551f39d..4af34cd1 100644
+--- a/compiler/core/cNRAEnv/Lang/cNRAEnvIgnore.v
++++ b/compiler/core/cNRAEnv/Lang/cNRAEnvIgnore.v
+@@ -385,7 +385,7 @@ Section cNRAEnvIgnore.
+       revert IHl.
+       generalize (lift_filter
+                     (fun x' : data =>
+-                       match h ⊢ₑ e1 @ₑx' ⊣ c;env1 with
++                       match h ⊢ₑ e1 @ₑ x' ⊣ c;env1 with
+                        | Some (dbool b) => Some b
+                        | _ => None
+                        end) l
+diff --git a/compiler/core/cNRAEnv/Typing/TcNRAEnv.v b/compiler/core/cNRAEnv/Typing/TcNRAEnv.v
+index c41edbac..bb5b1b56 100644
+--- a/compiler/core/cNRAEnv/Typing/TcNRAEnv.v
++++ b/compiler/core/cNRAEnv/Typing/TcNRAEnv.v
+@@ -367,7 +367,7 @@ Section TcNRAEnv.
+                 data_type d (Rec Closed τ₁ pf1) ->
+                 exists x : data,
+                    brand_relation_brands ⊢ₑ op1 @ₑ y ⊣ c;env = Some x /\ data_type x (Coll (Rec Closed τ₂ pf2))) ->
+-    exists x : list data, (omap_product (fun z =>  brand_relation_brands ⊢ₑ op1@ₑ y ⊣ c;env) dl = Some x) /\ data_type (dcoll x) (Coll (Rec Closed τ₃ pf3)).
++    exists x : list data, (omap_product (fun z =>  brand_relation_brands ⊢ₑ op1 @ₑ y ⊣ c;env) dl = Some x) /\ data_type (dcoll x) (Coll (Rec Closed τ₃ pf3)).
+   Proof.
+     intros dt_c Henv.
+     intros; rewrite Forall_forall in *.
