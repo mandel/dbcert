@@ -463,7 +463,7 @@ js_of_ocaml. That keeps the library deliverable alive at the cost of
 keeping the legacy toolchain in the build. It is not the plan, only the
 escape hatch.
 
-### D13. First measurement of the Q*cert port, and a policy question
+### D13. First measurement of the Q*cert port, and the proof-script policy
 
 Rocq 9.0.0 is built and working: JsAst v4.0.0, which upstream already
 ported, compiles and installs against it unchanged. That validates the
@@ -490,26 +490,86 @@ Five files still fail, listed in `upstream/README.md`, and they block the
 remaining 136. Four are the same family as the `StringAdd.v` bullets and
 one is a notation precedence error.
 
-**The policy question.** The standing instruction is to never modify,
-weaken or admit a proof, and to stop and report if something requires
-touching proofs. A version port cannot honour that literally: proof
-scripts are tactic programs written against a particular prover, and
-moving four minor versions breaks some of them no matter what. What can
-be honoured, and what has been honoured so far, is the substance of the
-rule:
-
-* no theorem statement is changed;
-* no proof is replaced by `admit` or `Admitted`;
-* every lemma still closes with `Qed`, so the kernel checks it;
-* nothing is weakened, and no hypothesis is added.
-
-Under that reading, deleting a bullet whose goal no longer exists is not
-modifying a proof in the sense the rule protects against; the proof term
-the kernel accepts is still a complete proof of the same statement. The
-port cannot proceed on the stricter reading, so this is recorded as the
-interpretation in force, subject to the user saying otherwise.
+**The policy, answered.** The user settled it on 2026-09-22: proof
+scripts may be changed, but no lemma, definition, theorem "or anything
+like that" may be. That is the reading recorded below, and it is now
+enforced mechanically rather than promised (D14).
 
 Every proof script touched will be listed individually, per repository,
 in the patch rationale under `upstream/`, so that the set stays auditable
 and small.
+
+### D14. The statement guard
+
+A promise not to change any statement is worth little at the scale of a
+port, so `upstream/check-statements.py` checks it. It reads the upstream
+tree and the ported tree, strips every proof body, and diffs what is left:
+every `Lemma`, `Theorem`, `Definition`, `Fixpoint`, `Inductive`, `Class`,
+`Record`, `Instance`, `Notation`, `Axiom` and `Parameter`, plus the
+comments.
+
+Differences land in four buckets. Three are things a version port is
+allowed to produce, and each is proved to be only that by normalising and
+re-comparing rather than by being waved through:
+
+* an import of a module the new standard library dropped;
+* `:>` rewritten to `::` in a class field — checked by normalising both
+  spellings to one token, so an edit to a field's name or type cannot hide
+  in this bucket;
+* whitespace around a notation token that Rocq 9 will not lex when it
+  touches its operands — checked by normalising that token's spacing, and
+  the list of such tokens is explicit rather than "any whitespace".
+
+The fourth bucket is everything else, and it must be zero. The script
+exits non-zero if it is not. Against Q*cert it currently reports 33
+import-only, 14 class-field, 2 respacing, and **0 statement** differences.
+
+This is what makes the user's rule checkable instead of aspirational: any
+future port step that edits a statement, by accident or by shortcut, fails
+the guard.
+
+### D15. Q*cert port: 341 of 449, and the shape of what is left
+
+After the fixes in `upstream/README.md`, 341 of Q*cert's 449 files compile
+under Rocq 9.0.0. Four proof scripts have been touched, all of the same
+kind: a tactic now closes more goals than it used to, so a bullet or a
+`[t1|t2]` dispatch is left with nothing to do, and the dead line is
+removed.
+
+Progress is not monotonic in the error count. Each fix unblocks the files
+that depended on it, and those reveal their own breakages, so the list of
+failures turns over. It went 14 files → 2 → 1 → 5 → 5 while the compiled
+count went 0 → 25 → 40 → 313 → 341.
+
+One practical note that cost time and is worth recording: `all: idtac "X"`
+is a bad way to count goals, because it prints once when there are none.
+`Show.` is the reliable probe, since it says `No more goals.` or `N goals`
+outright.
+
+Two of the five remaining failures are "found no subterm matching", where
+a `rewrite` no longer matches because the target term has a different
+shape. Those need the goal read, not a line deleted, and they are the
+first ones where the answer is not obvious from the error alone.
+
+### D16. The Rocq MCP server suggested by the user
+
+`github.com/LLM4Rocq/rocq-mcp-evolve` is an MCP tool layer for driving
+Rocq interactively, with a persistent in-process session and rollback
+instead of recompiling a file per attempt. It would genuinely suit the
+work that is left, which is reading goal states and trying tactics.
+
+It cannot be used from inside this session, for two reasons that are worth
+recording so the option is not re-examined from scratch:
+
+1. It installs through `opam pin` and wants `rocq-runtime` 9.1 or later.
+   opam cannot fetch sources in this environment (D1), and the Rocq built
+   here is 9.0.0, so it would need a 9.1.1 build first.
+2. It is consumed as an MCP server, which the client configures; an agent
+   cannot add one to its own tool set mid-session.
+
+Wiring it up is the user's call, on the client side: one `mcpServers`
+entry, `{ "rocq": { "command": "rocq-mcp-evolve" } }`, against a switch
+with Rocq 9.1.1. Until then the loop here is `coqc` on one file plus the
+`Show.` probe above, which is slower per attempt but has taken the port
+from 0 to 341 files.
 

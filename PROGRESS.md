@@ -55,7 +55,7 @@ The js_of_ocaml work waits until the chain builds on current Rocq.
 | Modern toolchain | **done** | OCaml 4.14.1, dune 3.14, findlib 1.9.6, zarith 1.13, menhir 20231231, js_of_ocaml 5.6.0, all from Ubuntu packages (DECISIONS D11). |
 | Rocq 9.0.0 | **done** | Built from the GitHub release tarball into `/opt/rocq90`, with the separately packaged standard library from `rocq-prover/stdlib` at V9.0.0. |
 | JsAst | **done** | v4.0.0 already targets Rocq 9 upstream. Builds and installs unchanged, which validates the toolchain. |
-| Q*cert | **313 of 449 files** | Patch and rationale in `upstream/`. Five files still fail and block the remaining 136 (DECISIONS D13). |
+| Q*cert | **341 of 449 files** | Patch and rationale in `upstream/`. Five files still fail and block the remaining 108 (DECISIONS D15). |
 | SQLFormalSemantics | not started | `parser+8.15` is a Coq 8.15.2 port but has no floats; `with-floats` is at 8.11.2. The two have to be reconciled (DECISIONS D10). |
 | SQLToNRACert | not started | Still 8.11.2, and carries a Coq plugin written against Coq 8.11's OCaml API, the most version-fragile piece in the chain. |
 | dbcert | not started | Two `.v` files. |
@@ -64,20 +64,18 @@ The js_of_ocaml work waits until the chain builds on current Rocq.
 
 | Measurement | Value |
 |---|---|
-| Q*cert files compiling under Rocq 9.0 | 313 / 449 |
-| Files changed by the port patch | 48, with 38 insertions and 76 deletions |
-| Theorem statements changed | 0 |
+| Q*cert files compiling under Rocq 9.0 | 341 / 449 |
+| Files changed by the port patch | 53, with 53 insertions and 93 deletions |
+| Theorem statements changed | 0, verified by `upstream/check-statements.py` |
 | `Admitted` / `admit.` introduced | 0 / 0 |
-| Proof scripts touched | 2 lemmas, both in `Utils/StringAdd.v`, both still `Qed` |
+| Proof scripts touched | 4, each listed by file and lemma in `upstream/README.md`, all still `Qed` |
 | Remaining error sites in Q*cert | 5 |
 
 ## Open items
 
-* **Waiting on the user:** the proof-script policy in DECISIONS D13. A
-  version port necessarily edits tactic scripts. Nothing has been
-  weakened or admitted and no statement has changed, but the standing
-  rule says to stop and report when proofs need touching, so this is the
-  report.
+* **Answered:** proof scripts may be changed, statements may not
+  (2026-09-22). Enforced by `upstream/check-statements.py`, which reports
+  0 statement differences (DECISIONS D14).
 * **Waiting on the user:** whether the float support has to survive the
   port. The only newer-Coq work upstream in SQLFormalSemantics is on the
   no-floats line (DECISIONS D10), so keeping floats means porting the
@@ -86,3 +84,7 @@ The js_of_ocaml work waits until the chain builds on current Rocq.
 * The environment cannot run opam (DECISIONS D1), so Phase 5's GitHub
   Actions work will have to be written against opam without being
   exercised end to end here.
+* **Optional, user's call:** wiring up `rocq-mcp-evolve` as an MCP server
+  would speed up the proof work that is left. It needs Rocq 9.1.1 and a
+  client-side `mcpServers` entry, neither of which can be done from
+  inside a session (DECISIONS D16).

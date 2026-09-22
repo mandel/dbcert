@@ -186,6 +186,18 @@ index 3b8520f7..78db3327 100644
  Require Import Bool.
  Require Import Peano_dec.
  Require Import EquivDec.
+diff --git a/compiler/core/NNRC/Lang/NNRCStratify.v b/compiler/core/NNRC/Lang/NNRCStratify.v
+index 3de34849..b10dd105 100644
+--- a/compiler/core/NNRC/Lang/NNRCStratify.v
++++ b/compiler/core/NNRC/Lang/NNRCStratify.v
+@@ -1283,7 +1283,6 @@ Section Stratify.
+       unfold nnrc_eval in *.
+       destruct a; simpl in *.
+       match_case; intros ? eqq; simpl.
+-      rewrite IHsdefs; trivial.
+     Qed.
+ 
+     Lemma eval_substs_app h cenv (sdefs1 sdefs2:list (var*nnrc)) (env:bindings) :
 diff --git a/compiler/core/NNRC/Lang/NNRCSugar.v b/compiler/core/NNRC/Lang/NNRCSugar.v
 index a69e5742..3f3b8e97 100644
 --- a/compiler/core/NNRC/Lang/NNRCSugar.v
@@ -429,6 +441,123 @@ index 2802be2b..dfb5ab40 100644
  Require Import Lia.
  Require Import List.
  Require Import Utils.
+diff --git a/compiler/core/NRA/Optim/TNRARewrite.v b/compiler/core/NRA/Optim/TNRARewrite.v
+index 1d460e90..26da0ee0 100644
+--- a/compiler/core/NRA/Optim/TNRARewrite.v
++++ b/compiler/core/NRA/Optim/TNRARewrite.v
+@@ -74,7 +74,7 @@ Section TNRARewrite.
+     brand_relation_brands ⊢ (σ⟨ op2 ∧ op1 ⟩(op)) @ₐ x ⊣ c.
+   Proof.
+     intros ? ? ? Hcenv; intros; simpl.
+-    assert (exists d, (brand_relation_brands ⊢ op@ₐx ⊣ c = Some d /\ (d ▹ (Coll τ))))
++    assert (exists d, (brand_relation_brands ⊢ op @ₐ x ⊣ c = Some d /\ (d ▹ (Coll τ))))
+       by (apply (@typed_nra_yields_typed_data m τc τin); assumption).
+     elim H3; clear H3; intros.
+     elim H3; clear H3; intros.
+@@ -94,7 +94,7 @@ Section TNRARewrite.
+     rewrite Forall_forall in H6; simpl in H6.
+     assert (data_type a τ)
+       by intuition.
+-    assert (exists d, (brand_relation_brands ⊢ op2@ₐa ⊣ c = Some d /\ (d ▹ Bool)))
++    assert (exists d, (brand_relation_brands ⊢ op2 @ₐ a ⊣ c = Some d /\ (d ▹ Bool)))
+       by (apply (@typed_nra_yields_typed_data m τc τ); assumption).
+     destruct H4 as [? [eqq dt]].
+     rewrite eqq; clear eqq.
+@@ -108,13 +108,13 @@ Section TNRARewrite.
+           end) dl).
+     - destruct x1.
+       + simpl.
+-        assert (exists d, (brand_relation_brands ⊢ op1@ₐa ⊣ c = Some d /\ (d ▹ Bool)))
++        assert (exists d, (brand_relation_brands ⊢ op1 @ₐ a ⊣ c = Some d /\ (d ▹ Bool)))
+           by (apply (@typed_nra_yields_typed_data m τc τ); assumption).
+         destruct H4 as [? [eqq dt]].
+         rewrite eqq; clear eqq.
+         dtype_inverter.
+         reflexivity.
+-      + assert (exists d, (brand_relation_brands ⊢ op1@ₐa ⊣ c = Some d /\ (d ▹ Bool)))
++      + assert (exists d, (brand_relation_brands ⊢ op1 @ₐ a ⊣ c = Some d /\ (d ▹ Bool)))
+           by (apply (@typed_nra_yields_typed_data m τc τ); assumption).
+         destruct H4 as [? [eqq dt]].
+         rewrite eqq; clear eqq.
+@@ -125,7 +125,7 @@ Section TNRARewrite.
+       | Some (dbool b0) => Some b0
+       | _ => None
+       end) l); reflexivity.
+-    - destruct (brand_relation_brands ⊢ op1@ₐa ⊣ c); try reflexivity.
++    - destruct (brand_relation_brands ⊢ op1 @ₐ a ⊣ c); try reflexivity.
+       destruct d; reflexivity.
+   Qed.      
+ 
+@@ -234,7 +234,7 @@ Section TNRARewrite.
+   Defined.
+ 
+   Lemma typed_nra_total_bool_consistent {τc} {τ} c (op:τ ⇝ Bool ⊣ τc) (d: {x:data|(x ▹ τ)}) (Hcenv:bindings_type c τc) :
+-    match (brand_relation_brands ⊢ `op@ₐ`d ⊣ c) with
++    match (brand_relation_brands ⊢ `op @ₐ `d ⊣ c) with
+       | Some (dbool b) => Some b
+       | _ => None
+     end = Some (typed_nra_total_bool c op Hcenv d).
+@@ -252,7 +252,7 @@ Section TNRARewrite.
+   Qed.
+ 
+   Lemma typed_nra_total_bool_consistent2 {τc} {τ} c (op:τ ⇝ Bool ⊣ τc) (x:data) (pf:(x ▹ τ)) (Hcenv:bindings_type c τc) :
+-    match (brand_relation_brands ⊢ `op@ₐx ⊣ c) with
++    match (brand_relation_brands ⊢ `op @ₐ x ⊣ c) with
+       | Some (dbool b) => Some b
+       | _ => None
+     end = Some (typed_nra_total_bool c op Hcenv (exist _ x pf)).
+@@ -265,7 +265,7 @@ Section TNRARewrite.
+     data_type d τ ->
+     exists b' : bool,
+       (fun x' : data =>
+-         match brand_relation_brands ⊢ (`op)@ₐ x' ⊣ c with
++         match brand_relation_brands ⊢ (`op) @ₐ x' ⊣ c with
+            | Some (dbool b) => Some b
+            | _ => None
+          end) d = Some b'.
+@@ -389,9 +389,9 @@ Section TNRARewrite.
+     unfold tnra_eq.
+     intros ? ? x c ? Hcenv.
+     rewrite H; rewrite H0; clear H H0 opl opr; simpl.
+-    assert (exists d1, (brand_relation_brands ⊢ `op1@ₐx ⊣ c = Some d1 /\ (d1 ▹ (Coll τ))))
++    assert (exists d1, (brand_relation_brands ⊢ `op1 @ₐ x ⊣ c = Some d1 /\ (d1 ▹ (Coll τ))))
+       by (apply (@typed_nra_yields_typed_data m τc τin); [assumption|assumption|apply (proj2_sig op1)]).
+-    assert (exists d2, (brand_relation_brands ⊢ `op2@ₐx ⊣ c = Some d2 /\ (d2 ▹ (Coll τ))))
++    assert (exists d2, (brand_relation_brands ⊢ `op2 @ₐ x ⊣ c = Some d2 /\ (d2 ▹ (Coll τ))))
+       by (apply (@typed_nra_yields_typed_data m τc τin); [assumption|assumption|apply (proj2_sig op2)]).
+     elim H; elim H0; clear H H0; intros.
+     elim H; elim H0; clear H H0; intros.
+diff --git a/compiler/core/NRA/Typing/TNRA.v b/compiler/core/NRA/Typing/TNRA.v
+index 9778d5c2..52d996d0 100644
+--- a/compiler/core/NRA/Typing/TNRA.v
++++ b/compiler/core/NRA/Typing/TNRA.v
+@@ -319,7 +319,7 @@ Section TNRA.
+                 data_type d (Rec Closed τ₁ pf1) ->
+                 exists x : data,
+                    brand_relation_brands ⊢ op1 @ₐ y  ⊣ c = Some x /\ data_type x (Coll (Rec Closed τ₂ pf2))) ->
+-    exists x : list data, (omap_product (fun z =>  brand_relation_brands ⊢ op1@ₐ y ⊣ c) dl = Some x) /\ data_type (dcoll x) (Coll (Rec Closed τ₃ pf3)).
++    exists x : list data, (omap_product (fun z =>  brand_relation_brands ⊢ op1 @ₐ y ⊣ c) dl = Some x) /\ data_type (dcoll x) (Coll (Rec Closed τ₃ pf3)).
+   Proof.
+     intros Hcenv.
+     intros; rewrite Forall_forall in *.
+@@ -521,7 +521,7 @@ Section TNRA.
+     intros HdT.
+     generalize (typed_nra_yields_typed_data c d op dt_c HdT HOpT).
+     intros.
+-    destruct (brand_relation_brands ⊢ op@ₐd ⊣ c).
++    destruct (brand_relation_brands ⊢ op @ₐ d ⊣ c).
+     assert (data_type d0 τout).
+     - inversion H. inversion H0. inversion H1. trivial.
+     - exists d0. trivial.
+@@ -532,7 +532,7 @@ Section TNRA.
+   Lemma typed_nra_total_eq_matches_eval {τc} {τin τout} (op:nra) (HOpT: op ▷ τin >=> τout ⊣ τc) c (d:data)
+     (dt_c: bindings_type c τc)
+         (pf: data_type d τin) :
+-    (brand_relation_brands ⊢ op @ₐd ⊣ c) = Some (proj1_sig (typed_nra_total op HOpT c d dt_c pf)).
++    (brand_relation_brands ⊢ op @ₐ d ⊣ c) = Some (proj1_sig (typed_nra_total op HOpT c d dt_c pf)).
+   Proof.
+     unfold typed_nra_total.
+     generalize (typed_nra_yields_typed_data c d op dt_c pf HOpT); intros.
 diff --git a/compiler/core/Translation/Model/ForeignDataToEJson.v b/compiler/core/Translation/Model/ForeignDataToEJson.v
 index 856190f7..6923f2da 100644
 --- a/compiler/core/Translation/Model/ForeignDataToEJson.v
@@ -442,6 +571,18 @@ index 856190f7..6923f2da 100644
           ; foreign_to_ejson_to_data
               (j:foreign_ejson_model) : foreign_data_model
           ; foreign_to_ejson_from_data
+diff --git a/compiler/core/Translation/Typing/TNRAtocNNRC.v b/compiler/core/Translation/Typing/TNRAtocNNRC.v
+index ef5e2873..c40444ce 100644
+--- a/compiler/core/Translation/Typing/TNRAtocNNRC.v
++++ b/compiler/core/Translation/Typing/TNRAtocNNRC.v
+@@ -110,7 +110,6 @@ Section TNRAtocNNRC.
+       + econstructor. econstructor; eauto.
+         econstructor; eauto.
+         econstructor; eauto.
+-        eapply Forall_nil.
+       + apply IHnra_type2; simpl; trivial; match_destr; elim_fresh e.
+       + econstructor; eauto.
+         simpl; match_destr; elim_fresh e.
 diff --git a/compiler/core/TypeSystem/ForeignType.v b/compiler/core/TypeSystem/ForeignType.v
 index 42647bdc..9fa06ca3 100644
 --- a/compiler/core/TypeSystem/ForeignType.v
@@ -672,3 +813,25 @@ index d62df334..729b06e2 100644
  Require Import Arith.
  Require Import Utils.
  Require Import DataRuntime.
+diff --git a/compiler/core/cNRAEnv/Lang/cNRAEnv.v b/compiler/core/cNRAEnv/Lang/cNRAEnv.v
+index da8aab12..11de94ee 100644
+--- a/compiler/core/cNRAEnv/Lang/cNRAEnv.v
++++ b/compiler/core/cNRAEnv/Lang/cNRAEnv.v
+@@ -1210,7 +1210,7 @@ Section cNRAEnv.
+       rewrite app_nil_r in *.
+       rewrite lift_map_remove1 in *; simpl.
+       rewrite (IHae1 env a); unfold nra_context_data; simpl.
+-      generalize (h ⊢ (nra_of_nraenv_core ae1) @ₐ(drec
++      generalize (h ⊢ (nra_of_nraenv_core ae1) @ₐ (drec
+             (("PBIND", env)
+              :: ("PDATA", a) :: nil)) ⊣ constant_env); intros.
+       destruct o; try reflexivity; simpl.
+@@ -1319,7 +1319,7 @@ Section cNRAEnv.
+       rewrite app_nil_r in *.
+       rewrite lift_map_remove1 in *; simpl.
+       rewrite (IHae1 env a); unfold nra_context_data; simpl.
+-      generalize (h ⊢ (nra_of_nraenv_core ae1) @ₐ(drec
++      generalize (h ⊢ (nra_of_nraenv_core ae1) @ₐ (drec
+             (("PBIND", env)
+              :: ("PDATA", a) :: nil)) ⊣ constant_env); intros.
+       destruct o; try reflexivity; simpl.
