@@ -55,7 +55,8 @@ The js_of_ocaml work waits until the chain builds on current Rocq.
 | Modern toolchain | **done** | OCaml 4.14.1, dune 3.14, findlib 1.9.6, zarith 1.13, menhir 20231231, js_of_ocaml 5.6.0, all from Ubuntu packages (DECISIONS D11). |
 | Rocq 9.0.0 | **done** | Built from the GitHub release tarball into `/opt/rocq90`, with the separately packaged standard library from `rocq-prover/stdlib` at V9.0.0. |
 | JsAst | **done** | v4.0.0 already targets Rocq 9 upstream. Builds and installs unchanged, which validates the toolchain. |
-| Q*cert | **457 of 459 modules** | Patch and rationale in `upstream/`. The two that remain are test files, one blocking the other (DECISIONS D17). |
+| Q*cert (Coq) | **459 of 459 modules** | Complete. Extraction runs, emitting 259 OCaml modules (DECISIONS D18). |
+| Q*cert (OCaml) | blocked | `dune build -p coq-qcert` needs the `wasm` library, a dependency `master` added over `v2.1.1` (DECISIONS D18). |
 | SQLFormalSemantics | not started | `parser+8.15` is a Coq 8.15.2 port but has no floats; `with-floats` is at 8.11.2. The two have to be reconciled (DECISIONS D10). |
 | SQLToNRACert | not started | Still 8.11.2, and carries a Coq plugin written against Coq 8.11's OCaml API, the most version-fragile piece in the chain. |
 | dbcert | not started | Two `.v` files. |
@@ -64,12 +65,13 @@ The js_of_ocaml work waits until the chain builds on current Rocq.
 
 | Measurement | Value |
 |---|---|
-| Q*cert modules compiling under Rocq 9.0 | 457 / 459 |
-| Files changed by the port patch | 60, with 65 insertions and 107 deletions |
+| Q*cert modules compiling under Rocq 9.0 | 459 / 459 |
+| Extracted OCaml modules produced | 259 |
+| Files changed by the port patch | 61, with 68 insertions and 115 deletions |
 | Theorem statements changed | 0, verified by `upstream/check-statements.py` |
 | `Admitted` / `admit.` introduced | 0 / 0 |
-| Proof scripts touched | 10, each listed by file, line and reason in `upstream/README.md`, all still `Qed` |
-| Remaining failures in Q*cert | 2, both test files (`Tests/LambdaNRATest.v` and the file importing it) |
+| Proof scripts touched | 13, each listed by file, line and reason in `upstream/README.md`, all still `Qed` |
+| Remaining failures in Q*cert's Coq development | 0 |
 
 ## Open items
 

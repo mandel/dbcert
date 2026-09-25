@@ -601,6 +601,42 @@ index 9778d5c2..52d996d0 100644
    Proof.
      unfold typed_nra_total.
      generalize (typed_nra_yields_typed_data c d op dt_c pf HOpT); intros.
+diff --git a/compiler/core/Tests/LambdaNRATest.v b/compiler/core/Tests/LambdaNRATest.v
+index 2497a979..b9704905 100644
+--- a/compiler/core/Tests/LambdaNRATest.v
++++ b/compiler/core/Tests/LambdaNRATest.v
+@@ -109,8 +109,7 @@ Section LambdaNRATest.
+                   (String (Ascii.Ascii false false false false true true true false)
+                      EmptyString)))); simpl; intros.
+     - unfold lambda_nra_eval in H |- *.
+-      rewrite H; clear H.
+-      rewrite olift_some.
++      unfold olift in H; rewrite H; clear H.
+       match_case_in IHl; intros; rewrite H in IHl.
+       + apply some_lift in H.
+         destruct H as [? ? ?]; subst.
+@@ -150,7 +149,7 @@ Section LambdaNRATest.
+           rewrite @assoc_lookupr_app.
+           simpl.
+           trivial.
+-        * repeat match_destr.
++        * unfold edot; simpl; rewrite (@assoc_lookupr_drec_sort string ODT_string); rewrite @assoc_lookupr_app; simpl; trivial.
+       + symmetry in IHl.
+         apply none_lift in IHl.
+         apply none_lift in H.
+@@ -158,11 +157,7 @@ Section LambdaNRATest.
+         simpl.
+         destruct d; simpl; trivial.
+         match_destr.
+-    - match_case; intros.
+-      unfold lambda_nra_eval in H, H0.
+-      rewrite H in H0.
+-      simpl in H0.
+-      discriminate.
++    - match_case; intros; try unfold lambda_nra_eval in H, H0; unfold olift in H, H0; rewrite H in H0; simpl in H0; try discriminate; rewrite H; simpl; trivial.
+   Qed.
+ 
+   
 diff --git a/compiler/core/Translation/Lang/ImpDatatoImpEJson.v b/compiler/core/Translation/Lang/ImpDatatoImpEJson.v
 index 858f85ee..5b818d4e 100644
 --- a/compiler/core/Translation/Lang/ImpDatatoImpEJson.v

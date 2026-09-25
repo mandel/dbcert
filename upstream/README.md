@@ -40,8 +40,9 @@ STATEMENT differences:              0
 
 Part of the port described in DECISIONS.md D10. Against `master`, which
 targets Coq 8.15–8.16, this patch takes the Coq development from 0 to
-**457 of the 459 modules** listed in `Makefile.coq_modules` compiling
-under Rocq 9.0.0. It touches 60 files with 65 insertions and 107
+**all 459 modules** listed in `Makefile.coq_modules` compiling under
+Rocq 9.0.0, and `make qcert-ocaml-extract` then runs, producing the 259
+extracted OCaml modules. It touches 61 files with 68 insertions and 115
 deletions, and changes no statement of any theorem, which
 `check-statements.py` verifies mechanically.
 
@@ -85,29 +86,56 @@ Four kinds of change, all of them the documented migrations:
    | `Translation/Lang/NNRCtoNNRCMR.v` | two sites, lines 363 and 416 | `case (equiv_dec output output)` silently stopped matching, because the `if` in the goal is at type `var` while a fresh `equiv_dec` elaborates at `string`; replaced by an explicit `destruct (@equiv_dec var … output output)` followed by the `string`-typed one |
    | `Translation/Lang/ImpDatatoImpEJson.v` | two sites, lines 499 and 666 | `rewrite H0` stopped matching because the goal holds `map (imp_data_expr_eval h σ) el` while `case_eq` had produced the eta-expanded `map (fun x => imp_data_expr_eval h σ x) el`; the `case_eq` argument is eta-reduced so the two agree again |
    | `LambdaNRA/Typing/TLambdaNRA.v` | lines 176, 209 and 297 | three rewrites of `lnra_lambda_eval_lambda_eq` and one `omap_product_ext` are now no-ops, because that lemma holds by `reflexivity` and Rocq 9 already presents the reduced form; the dead rewrites are removed |
+   | `Tests/LambdaNRATest.v` | `T1lr_equiv`, three sites | see below |
 
 ### Not yet done
 
-Two of the 459 listed modules still fail, both of them test files, and one
-blocks the other:
+### `Tests/LambdaNRATest.v` — the last one, and why it took three changes
 
-| File | Line | Error |
-|---|---|---|
-| `Tests/LambdaNRATest.v` | 112 | Found no subterm matching |
-| `Tests/tDNNRCTest.v` | 27 | cannot find `LambdaNRATest` (it only fails because the above does) |
+`T1lr_equiv` proves two lambda-NRA expressions equivalent. Everything that
+broke in it comes from one fact: `olift f x` is *definitionally* the match
+it abbreviates, and Rocq 9 presents goals in the reduced form where Coq
+8.16 left `olift` folded. Three consequences, each needing its own fix.
 
-`LambdaNRATest.v:112` is a `rewrite H` where the hypothesis carries
-`olift f (edot …)` and the goal carries the reduced `match edot … with`
-form. `unfold olift in H` makes that one rewrite succeed and makes the
-following `rewrite olift_some` redundant, but the case split further down
-then leaves three goals where the proof has two `*` bullets, and the
-obvious closers (`trivial`, `congruence`, `unfold lift`, `simpl`) do not
-discharge them. The two leftover goals are the contradictory pair
-`lift dcoll (lift … (lift_map …)) = lift dcoll None` and its mirror, so
-what is needed is whatever relates them to `IHl`. This one is parked
-rather than guessed at; the file is a test, not part of the compiler, but
-the extraction Makefile lists it, so it has to build for
-`make qcert-ocaml-extract` to run.
+1. **Line 112, `rewrite H`.** The hypothesis holds
+   `olift (fun d1 => match d1 with drec r => edot r "addr" | _ => None end)
+   (edot …)` while the goal holds the fused
+   `match edot … with Some (drec r) => edot r "addr" | _ => None end`.
+   `unfold olift in H` makes the two agree. That in turn makes the next
+   line, `rewrite olift_some`, a no-op, so it is removed.
+
+2. **The second `*` bullet, line 152.** Its `repeat match_destr` used to
+   close the goal and now leaves three, the first of which is the two
+   sides of an equation differing only in `d0` versus `d1`. Those are the
+   same value: one side has already resolved
+   `edot (rec_sort (env ++ [("a", d)])) "a"` to `d` and the other has
+   not. The first `*` bullet, immediately above, already contains the
+   lookup dance that resolves it, so the second bullet now does the same:
+   `unfold edot; simpl; rewrite (@assoc_lookupr_drec_sort string ODT_string);
+   rewrite @assoc_lookupr_app; simpl; trivial`.
+
+3. **The second `-` bullet, line 160.** `match_case` here now leaves two
+   goals where it left one, and the script's `.`-separated tactics only
+   ever addressed the first. The two goals also differ: one still
+   mentions `lambda_nra_eval` and the other does not, and one closes by
+   `discriminate` on the rewritten hypothesis while the other closes by
+   rewriting the hypothesis into the goal, which collapses it to
+   `None = None`. The whole branch is now one chained tactic that covers
+   both:
+   `match_case; intros; try unfold lambda_nra_eval in H, H0;
+   unfold olift in H, H0; rewrite H in H0; simpl in H0; try discriminate;
+   rewrite H; simpl; trivial`.
+
+The statement of `T1lr_equiv` is untouched and it closes with `Qed`.
+
+### Not yet done: the OCaml side
+
+The Coq development is complete, but `dune build -p coq-qcert` does not
+yet run on this branch, and for a reason that has nothing to do with
+Rocq: Q*cert `master` added a dependency on the `wasm` library (pinned to
+1.0.1 in its opam file) that `v2.1.1` did not have, and it is not
+installed here. `compiler/dune` and `runtimes/assemblyscript/dune` both
+want it. That is a dependency to fetch, not a port problem.
 
 ### How to probe a goal count
 

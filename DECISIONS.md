@@ -618,3 +618,34 @@ bullet. Replacing the whole `* tac.` line with `tac.` drops the focus and
 produces a confident, wrong answer: the tactic appears to close goals it
 never saw.
 
+### D18. Q*cert's Coq development is fully ported; the OCaml side needs a dependency
+
+All 459 modules listed in `Makefile.coq_modules` compile under Rocq 9.0.0,
+and `make qcert-ocaml-extract` runs, emitting the 259 extracted OCaml
+modules. Thirteen proof scripts were adjusted in total; the guard reports
+zero statement differences.
+
+`Tests/LambdaNRATest.v`, the file parked in D17, is done. Every failure in
+it traced to one fact worth stating plainly, because it explains a whole
+family of breakages in this port: **`olift f x` is definitionally the
+match it abbreviates, and Rocq 9 presents goals in the reduced form where
+Coq 8.16 left `olift` folded.** That single difference produced a failed
+`rewrite`, a redundant `rewrite olift_some`, an unresolved record lookup
+that made two identical sides look different, and a `match_case` that
+split into two goals where the script addressed one. Each is written up in
+`upstream/README.md`.
+
+The next blocker is not a port problem. Q*cert `master` added a dependency
+on the `wasm` library, pinned to 1.0.1 in its opam file, which `v2.1.1`
+did not have; `compiler/dune` and `runtimes/assemblyscript/dune` both
+require it and it is not installed here. So `dune build -p coq-qcert`,
+which is what produces the `qcert_lib` that dbcert links, still needs that
+library fetched, in the same from-source way as D5 and D11.
+
+A note on probing, which cost real time in this file and is worth keeping
+next to the one in D17: truncating a file to inspect a goal is only sound
+if the truncation lands on a real boundary. Off-by-one on the line index
+puts the probe inside the previous bullet and yields a confident, wrong
+reading. Asserting on the content of the line being replaced, rather than
+trusting the index, catches it immediately.
+
